@@ -428,7 +428,7 @@ contains
           mu_LowerBound = mu
        end if
        mu = Half*(mu_UpperBound + mu_LowerBound)
-       goto 111
+       goto 111  ! TODO: Remove this goto (while abs < 1.d-4 do ...)
     end if
    
     ! output the Green's function in k-w space
@@ -522,6 +522,7 @@ contains
           do k = 1, Nf
              dummy1D(k) = Chi0rt_pp(i, j, k)    
           end do
+          ! TODO: Investigate FDfit and nfourier for parallelism potential
           call FDfit(Nf, dble(dummy1D), beta/dble(Nf-1), FD1, FD2)
           call nfourier(Mtype, Nf-1, Nf/2, FD1, FD2, dble(dummy1D), coutdata)
           do k = 1, Nf/2
