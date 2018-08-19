@@ -1,3 +1,5 @@
+#include "../SRC_MOD/enum.h"
+
 module Parquet_kernel
   !
   ! Purpose
