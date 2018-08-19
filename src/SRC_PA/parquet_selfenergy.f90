@@ -56,7 +56,7 @@ contains
     ! [2] second order diagram 
     
     if (.NOT. allocated(dummy3d_1)) allocate(dummy3d_1(Nx, Ny, Nf))
-    MType = FERMIONIC
+    MType = _FERMIONIC
     dummy3D_1 = Zero
     do iTau = 1, Nf
        do i = 1, Nx

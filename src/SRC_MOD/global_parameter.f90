@@ -1,16 +1,16 @@
-#define BOSONIC   0
-#define FERMIOTIC 1
+#define _BOSONIC   0
+#define _FERMIOTIC 1
 
 #define CHANNEL_D 2
 #define CHANNEL_M 3
 #define CHANNEL_S 4
 #define CHANNEL_T 5
 
-#define FAAB    6
-#define FAAF    7
-#define FSUBF   8
-#define MINUSF  9
-#define MINUSB  10
+#define _FADDB    6
+#define _FADDF    7
+#define _FSUBF   8
+#define _MINUSF  9
+#define _MINUSB  10
 
 module global_parameter
   

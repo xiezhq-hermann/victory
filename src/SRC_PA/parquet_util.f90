@@ -13,13 +13,13 @@ module parquet_util
   ! character(len=30), parameter :: MinusB  = '-B'
   ! character(len=30), parameter :: Bosonic   = 'Bosonic'
   ! character(len=30), parameter :: Fermionic = 'Fermionic'
-  integer, parameter :: FaddB   = FAAB
-  integer, parameter :: FaddF   = FAAF
-  integer, parameter :: FsubF   = FSUBF
-  integer, parameter :: MinusF  = MINUSF
-  integer, parameter :: MinusB  = MINUSB
-  integer, parameter :: Bosonic   = BOSONIC
-  integer, parameter :: Fermionic = FERMIONIC
+  integer, parameter :: FaddB   = _FADDB
+  integer, parameter :: FaddF   = _FADDF
+  integer, parameter :: FsubF   = _FSUBF
+  integer, parameter :: MinusF  = _MINUSF
+  integer, parameter :: MinusB  = _MINUSB
+  integer, parameter :: Bosonic   = _BOSONIC
+  integer, parameter :: Fermionic = _FERMIONIC
 
   ! ... variables specific to the parquet approach ...
   logical :: DGA=.false.  ! determine if the local fully irreducible vertex is
@@ -280,7 +280,7 @@ contains
     ! character(len=30), intent(in) :: typ
     integer, intent(in) :: typ
 
-    if (typ == BOSONIC) then
+    if (typ == _BOSONIC) then
        idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
     elseif (typ == FERMIONIC) then
        idx =((P%ix-1)*Ny+P%iy-1)*Nf+P%iw
@@ -502,7 +502,7 @@ contains
        call fftb2d(Nx, Ny, Chi0rt_ph(1:Nx, 1:Ny, k), C_wave_x, C_wave_y)
     end do
 
-    Mtype = BOSONIC
+    Mtype = _BOSONIC
     do i = 1, Nx
        do j = 1, Ny
           do k = 1, Nf

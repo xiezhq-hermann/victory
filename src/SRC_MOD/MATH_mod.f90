@@ -179,9 +179,9 @@ contains
     !     MATHEMATICA
 
     DO i = 1, Iwmax
-       if(Mtype == FERMIOTIC) then
+       if(Mtype == _FERMIOTIC) then
           om = (Two*i - One)*pi/Beta
-       elseif (Mtype == BOSONIC) then
+       elseif (Mtype == _BOSONIC) then
           om = Two*(i-1)*Pi/Beta
        else
           print*, "Mtype is wrong in nfourier!"
