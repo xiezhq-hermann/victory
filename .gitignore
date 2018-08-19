@@ -6,3 +6,7 @@
 bin/
 
 *.mod
+
+*.dat
+
+out/

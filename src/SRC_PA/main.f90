@@ -33,27 +33,27 @@ program main
   ite = 1
   do while (.NOT. Converged .and. ite < 50)
      if (id == master) call loop_message(ite)
-     call cpu_time(t1)
+     t1 = MPI_WTIME()
  
      ! calculate single-particle green's function
      call pa_Gkw_Chi0(ite, Grt)
-     call cpu_time(t2)
+     t2 = MPI_WTIME()
      if (id == master) write(*, "(a, f12.6)") '  time spent on pa_Gkw_Chi0 is:', t2-t1 
      
      ! determine reducible vertex function and its kernel approximation
         call reducible_vertex(ite)
         call get_kernel_function(ite)
-     call cpu_time(t3)
+     t3 = MPI_WTIME()
      if (id == master) write(*, "(a, f12.6)") '  time spent on kernel calculation is:', t3-t2
 
      ! solve the parquet equation
      call solve_parquet_equation(ite)
-     call cpu_time(t4)
+     t4 = MPI_WTIME()
      if (id == master) write(*, "(a, f12.6)") '  time spent on solve_parquet_equation is:', t4-t3
 
      ! calculate the self-energy 
      call self_energy(ite, Grt, converged)
-     call cpu_time(t5)
+     t5 = MPI_WTIME()
      if (id == master) write(*, "(a, f12.6)") '  time spent on self_energy is:', t5-t4
 
      ! --- update irreducible vertex in each channel ---
