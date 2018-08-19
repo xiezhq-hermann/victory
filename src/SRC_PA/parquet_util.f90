@@ -282,7 +282,7 @@ contains
 
     if (typ == _BOSONIC) then
        idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
-    elseif (typ == FERMIONIC) then
+    elseif (typ == _FERMIONIC) then
        idx =((P%ix-1)*Ny+P%iy-1)*Nf+P%iw
     else
        write(*, *) 'unknown Matsubara Frequency type!'
