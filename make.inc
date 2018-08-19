@@ -1,6 +1,6 @@
-FC          = mpif90
-FC_FLAGS    = -traceback -check bounds -warn all 
-DIR         = SET YOUR VICTORY ROOT DIRECTORY HERE
+FC          = mpiifort
+FC_FLAGS    = -fpp -traceback -check bounds -warn all 
+DIR         = /home/richard/OpenACC_Hackathon/victory
 BIN         = $(DIR)/bin
 FLIB        = -lmkl_intel_thread -lmkl_intel_lp64 -lmkl_core -liomp5 -lpthread 
 MODPATH     = -I$(DIR)/src/SRC_MOD
