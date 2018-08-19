@@ -113,7 +113,9 @@ contains
     !
     ! Arguments
     ! =========
-    character(len=10), intent(in) :: Mtype
+
+    ! character(len=10), intent(in) :: Mtype
+    integer,  intent(in)     :: Mtype
     integer,  intent(in)     :: L, Iwmax
     real(dp), intent(in)     :: FD1, FD2, rindata(L+1)
     complex(dp), intent(out) :: coutdata(Iwmax)
@@ -177,9 +179,9 @@ contains
     !     MATHEMATICA
 
     DO i = 1, Iwmax
-       if(Mtype == "Fermionic") then
+       if(Mtype == FERMIOTIC) then
           om = (Two*i - One)*pi/Beta
-       elseif (Mtype == "Bosonic") then
+       elseif (Mtype == BOSONIC) then
           om = Two*(i-1)*Pi/Beta
        else
           print*, "Mtype is wrong in nfourier!"

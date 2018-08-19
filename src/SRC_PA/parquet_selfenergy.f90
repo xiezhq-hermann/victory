@@ -31,7 +31,8 @@ contains
     type(Indxmap) :: ComIdx1, ComIdx2, ComIdx3, ComIdx4, ComIdx5, ComIdx_j  ! combined index for momentum and frequency
     type(Indxmap) :: map_i, map_j, map_k
     character(len=30) :: FLE, str1, str2
-    character(len=10) :: Mtype
+    ! character(len=10) :: Mtype
+    integer :: Mtype
 
     if (.NOT. allocated(SigmaOld)) allocate(SigmaOld(Nt))
     SigmaOld = Sigma
@@ -55,7 +56,7 @@ contains
     ! [2] second order diagram 
     
     if (.NOT. allocated(dummy3d_1)) allocate(dummy3d_1(Nx, Ny, Nf))
-    MType = 'Fermionic'
+    MType = FERMIONIC
     dummy3D_1 = Zero
     do iTau = 1, Nf
        do i = 1, Nx
@@ -220,7 +221,7 @@ contains
                    end if
                    
                    dummy = dummy - dummy1*dummy2*dummy3*( &
-                   kernel('d', map_i, ComIdx_j,map_k) - 3.0d0*kernel('m', map_i, ComIdx_j, map_k))
+                   kernel(CHANNEL_D, map_i, ComIdx_j,map_k) - 3.0d0*kernel(CHANNEL_M, map_i, ComIdx_j, map_k))
                                      
                 
                    ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q) 
@@ -242,7 +243,7 @@ contains
                       
                       
                       dummy = dummy - conjg(dummy1)*conjg(dummy2)*dummy4*conjg(&
-                      kernel('d', ComIdx1, ComIdx_j,map_k) - 3.0d0*kernel('m', ComIdx1, ComIdx_j,map_k))
+                      kernel(CHANNEL_D, ComIdx1, ComIdx_j,map_k) - 3.0d0*kernel(CHANNEL_M, ComIdx1, ComIdx_j,map_k))
            
                  end if
                  
@@ -266,7 +267,7 @@ contains
                    
                    
                     dummy = dummy - dummy1*dummy2*dummy4*( &
-                    kernel('s', map_i, ComIdx_j, map_k) + kernel('t', map_i, ComIdx_j,map_k))
+                    kernel(CHANNEL_S, map_i, ComIdx_j, map_k) + kernel(CHANNEL_T, map_i, ComIdx_j,map_k))
                  
                   if ( index_bosonic(id*Nb+k)%iw > 1) then
                                  
@@ -275,7 +276,7 @@ contains
                    !  -U x T^2/2/N^2 sum_k' sum_q conjg {[Fd(-k,k';q) - Fm(-k,k';q)] x G(q-k') x G(k+q) x G(k') }
                    
                     dummy = dummy - conjg(dummy1*dummy2*dummy3*( &
-                    kernel('s',  ComIdx1, ComIdx_j, map_k) + kernel('t', ComIdx1, ComIdx_j,map_k )))                
+                    kernel(CHANNEL_S,  ComIdx1, ComIdx_j, map_k) + kernel(CHANNEL_T, ComIdx1, ComIdx_j,map_k )))                
                  
                   
                    end if

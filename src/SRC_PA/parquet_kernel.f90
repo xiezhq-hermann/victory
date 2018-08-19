@@ -313,7 +313,8 @@ contains
   !-------------------------------------------------------------------------------------------------
   complex(dp) function kernel(channel, k1, k2, q)
     
-    character(len=1), intent(in) :: channel
+    ! character(len=1), intent(in) :: channel
+    integer, intent(in) :: channel
     type(Indxmap),    intent(in) :: k1, k2, q
   
     ! ... local vars ...
@@ -345,7 +346,7 @@ contains
     if (qw > Nf/2) return
 
     select case (channel)
-    case ('d')
+    case (CHANNEL_D)
     
           background = K2_d1(idx, jc, list_index(q_, Bosonic))
 
@@ -362,7 +363,7 @@ contains
              Kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_d2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
           end if
        end if       
-    case ('m')
+    case (CHANNEL_M)
           background = K2_m1(idx, jc, list_index(q_, Bosonic))
        if (iw > Nf .or. iw < 1) then  ! k1 is out of range
           if (jw > Nf .or. jw < 1) then  ! k2 if out of range
@@ -377,7 +378,7 @@ contains
              Kernel = K2_m1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_m2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
           end if
        end if
-    case ('s')
+    case (CHANNEL_S)
           background = K2_s1(idx1, jc, list_index(q_, Bosonic))
        if (iw > Nf .or. iw < 1) then  ! k1 is out of range
           if (jw > Nf .or. jw < 1) then  ! k2 if out of range
@@ -392,7 +393,7 @@ contains
              Kernel = K2_s1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_s2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
           end if
        end if
-    case ('t')
+    case (CHANNEL_T)
           background = K2_t1(idx1, jc, list_index(q_, Bosonic))
        if (iw > Nf .or. iw < 1) then  ! k1 is out of range
           if (jw > Nf .or. jw < 1) then  ! k2 if out of range

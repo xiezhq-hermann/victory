@@ -6,13 +6,20 @@ module parquet_util
 
   implicit none
 
-  character(len=30), parameter :: FaddB   = 'F+B'
-  character(len=30), parameter :: FaddF   = 'F+F'
-  character(len=30), parameter :: FsubF   = 'F-F'
-  character(len=30), parameter :: MinusF  = '-F'
-  character(len=30), parameter :: MinusB  = '-B'
-  character(len=30), parameter :: Bosonic   = 'Bosonic'
-  character(len=30), parameter :: Fermionic = 'Fermionic'
+  ! character(len=30), parameter :: FaddB   = 'F+B'
+  ! character(len=30), parameter :: FaddF   = 'F+F'
+  ! character(len=30), parameter :: FsubF   = 'F-F'
+  ! character(len=30), parameter :: MinusF  = '-F'
+  ! character(len=30), parameter :: MinusB  = '-B'
+  ! character(len=30), parameter :: Bosonic   = 'Bosonic'
+  ! character(len=30), parameter :: Fermionic = 'Fermionic'
+  integer, parameter :: FaddB   = FAAB
+  integer, parameter :: FaddF   = FAAF
+  integer, parameter :: FsubF   = FSUBF
+  integer, parameter :: MinusF  = MINUSF
+  integer, parameter :: MinusB  = MINUSB
+  integer, parameter :: Bosonic   = BOSONIC
+  integer, parameter :: Fermionic = FERMIONIC
 
   ! ... variables specific to the parquet approach ...
   logical :: DGA=.false.  ! determine if the local fully irreducible vertex is
@@ -270,11 +277,12 @@ contains
   integer function list_index(P, typ) result(idx)
      
     type(Indxmap), intent(in) :: P
-    character(len=30), intent(in) :: typ
+    ! character(len=30), intent(in) :: typ
+    integer, intent(in) :: typ
 
-    if (typ == 'Bosonic') then
+    if (typ == BOSONIC) then
        idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
-    elseif (typ == 'Fermionic') then
+    elseif (typ == FERMIONIC) then
        idx =((P%ix-1)*Ny+P%iy-1)*Nf+P%iw
     else
        write(*, *) 'unknown Matsubara Frequency type!'
@@ -292,13 +300,14 @@ contains
     !  a given operation.
     !
     type(Indxmap), intent(in)     :: idx1, idx2
-    character(len=30), intent(in) :: operation
+    ! character(len=30), intent(in) :: operation
+    integer, intent(in) :: operation
     type(Indxmap), intent(out)    :: final_Indx
 
     ! ... local vars ...
     integer :: i, j, k
 
-    if (Trim(operation) == FaddB) then 
+    if (operation == FaddB) then 
        i = idx1%ix + idx2%ix - 1
        if (i > Nx) i = i - Nx
        j = idx1%iy + idx2%iy - 1
@@ -307,7 +316,7 @@ contains
        final_Indx = indxmap(i, j, k)
     end if
 
-    if (Trim(operation) == FaddF) then
+    if (operation == FaddF) then
        i = idx1%ix + idx2%ix - 1
        if (i > Nx) i = i - Nx
        j = idx1%iy + idx2%iy - 1
@@ -316,7 +325,7 @@ contains
        final_Indx = indxmap(i, j, k)
     end if
 
-    if (Trim(operation) == MinusF) then
+    if (operation == MinusF) then
        i = -idx1%ix + Nx + 2
        if (i > Nx) i = i - Nx
        j = -idx1%iy + Ny + 2
@@ -325,7 +334,7 @@ contains
        final_Indx = indxmap(i, j, k)
     end if
 
-    if (Trim(operation) == MinusB) then
+    if (operation == MinusB) then
        i = -idx1%ix + Nx + 2
        if (i > Nx) i = i - Nx
        j = -idx1%iy + Ny + 2
@@ -365,7 +374,8 @@ contains
     complex(dp) :: dummy1D(Nf), coutdata(Nf/2)
     complex(dp) :: Chi0rt_ph(Nx, Ny, Nf), Chi0rt_pp(Nx, Ny, Nf)
     character(len=30) :: FLE, str1
-    character(len=10) :: Mtype
+    ! character(len=10) :: Mtype
+    integer :: Mtype
 
 
     if (.NOT. allocated(Gkw))     allocate(Gkw(Nt))
@@ -492,7 +502,7 @@ contains
        call fftb2d(Nx, Ny, Chi0rt_ph(1:Nx, 1:Ny, k), C_wave_x, C_wave_y)
     end do
 
-    Mtype = 'Bosonic'
+    Mtype = BOSONIC
     do i = 1, Nx
        do j = 1, Ny
           do k = 1, Nf

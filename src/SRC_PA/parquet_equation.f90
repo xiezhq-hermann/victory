@@ -98,11 +98,11 @@ contains
                             end if
                          else
                             if (ichannel == 1) then
-                               F_d(i, j, k) = F_d(i, j, k) - 0.5d0*Kernel('d', index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
-                               F_m(i, j, k) = F_m(i, j, k) - 0.5d0*Kernel('d', index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                               F_d(i, j, k) = F_d(i, j, k) - 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                               F_m(i, j, k) = F_m(i, j, k) - 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
                             elseif (ichannel == 2) then
-                               F_d(i, j, k) = F_d(i, j, k) - 1.5d0*Kernel('m', index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
-                               F_m(i, j, k) = F_m(i, j, k) + 0.5d0*Kernel('m', index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                               F_d(i, j, k) = F_d(i, j, k) - 1.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                               F_m(i, j, k) = F_m(i, j, k) + 0.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
                             end if
                          end if
                       end do
@@ -132,11 +132,11 @@ contains
                                end if
                             else
                                if (ichannel == 1) then
-                                  F_d(i, j, k) = F_d(i, j, k) - 0.5d0*conjg(Kernel('d', index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
-                                  F_m(i, j, k) = F_m(i, j, k) - 0.5d0*conjg(Kernel('d', index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
+                                  F_d(i, j, k) = F_d(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
+                                  F_m(i, j, k) = F_m(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
                                elseif (ichannel == 2) then
-                                  F_d(i, j, k) = F_d(i, j, k) - 1.5d0*conjg(Kernel('m', index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
-                                  F_m(i, j, k) = F_m(i, j, k) + 0.5d0*conjg(Kernel('m', index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
+                                  F_d(i, j, k) = F_d(i, j, k) - 1.5d0*conjg(Kernel(CHANNEL_M, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
+                                  F_m(i, j, k) = F_m(i, j, k) + 0.5d0*conjg(Kernel(CHANNEL_M, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
                                end if
                             end if
                          end do
@@ -167,11 +167,11 @@ contains
                             end if
                          else
                             if (ichannel == 1) then
-                               F_s(i, j, k) = F_s(i, j, k) + 0.5d0*Kernel('d', index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
-                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*Kernel('d', index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
+                               F_s(i, j, k) = F_s(i, j, k) + 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
+                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
                             else
-                               F_s(i, j, k) = F_s(i, j, k) - 1.5d0*Kernel('m', index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
-                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*Kernel('m', index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
+                               F_s(i, j, k) = F_s(i, j, k) - 1.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
+                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
                             end if
                          end if
                       end do
@@ -202,11 +202,11 @@ contains
                                end if
                             else
                                if (ichannel == 1) then
-                                  F_s(i, j, k) = F_s(i, j, k) + 0.5d0*conjg(Kernel('d', index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
-                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel('d', index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
+                                  F_s(i, j, k) = F_s(i, j, k) + 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
+                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
                                else
-                                  F_s(i, j, k) = F_s(i, j, k) - 1.5d0*conjg(Kernel('m', index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
-                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel('m', index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
+                                  F_s(i, j, k) = F_s(i, j, k) - 1.5d0*conjg(Kernel(CHANNEL_M, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
+                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
                                end if
                             end if
                          end do
