@@ -1,9 +1,10 @@
 include make.inc
 
+DIR := ${PWD}
+
 ctqmc: 
 
-	@sed -i '3s|.*|DIR         = '${PWD}'|' make.inc
-	@DIR=${PWD}
+	@sed -i '3s|.*|DIR         = '${DIR}'|' make.inc
 	@mkdir bin
 
 	@echo '---------------- DFFT ----------------------'
