@@ -31,10 +31,13 @@ module global_parameter
   ! physical constant
   integer, parameter :: nSpin   = 2
   integer, parameter :: nTau    = 200
-  real(dp), parameter :: beta = 2.d0
-  real(dp), parameter :: xU   = 4.d0
   real(dp), parameter :: xJ   = 1.d0
-  real(dp), parameter :: nParticle = 1.d0
+  
+  ! will be determined by the config file
+  integer :: nOmega = 64
+  real(dp) :: beta = 2.d0
+  real(dp) :: xU   = 4.d0
+  real(dp) :: nParticle = 1.d0
 
   ! will be determined in Green function
   real(dp) :: mu   = 0.d0

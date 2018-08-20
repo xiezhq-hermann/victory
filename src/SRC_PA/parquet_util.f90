@@ -27,7 +27,6 @@ module parquet_util
                           ! is used.
   integer :: Nx           ! linear dimension of a1. 
   integer :: Ny           ! linear dimension of a2. 
-  integer :: nOmega
   integer :: Nf           ! num of Matsubara frequencies
   integer :: Nt           ! linear dimension of combined momentum and frequency
                           ! variable 
