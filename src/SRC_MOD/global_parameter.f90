@@ -16,6 +16,7 @@ module global_parameter
   integer, parameter :: MINUSF_   = 9
   integer, parameter :: MINUSB_   = 10
 
+  ! mathematic constants
   integer,  parameter :: dp = selected_real_kind(8)
   real(dp), parameter :: pi = acos(-1.d0)
   real(dp), parameter :: Zero = 0.d0, Half = 0.5d0, One = 1.d0, Two = 2.d0  
@@ -27,65 +28,19 @@ module global_parameter
   integer  :: ntasks, master, id, rc
   integer, allocatable :: status(:), send_request(:), recv_request(:)
 
+  ! physical constant
   integer, parameter :: nSpin   = 2
+  integer, parameter :: nTau    = 200
+  real(dp), parameter :: beta = 2.d0
+  real(dp), parameter :: xU   = 4.d0
+  real(dp), parameter :: xJ   = 1.d0
+  real(dp), parameter :: nParticle = 1.d0
 
-  integer :: nOmega  = 64 
-  integer :: nTau    = 200
-
-  real(dp) :: beta = 2.d0
-  real(dp) :: xU   = 4.d0
-  real(dp) :: xJ   = 1.d0
+  ! will be determined in Green function
   real(dp) :: mu   = 0.d0
-  real(dp) :: nParticle = 1.d0
-  
-  complex(dp), allocatable :: Omega(:)
 
-  logical :: Debug_Info = .False.
-
-     ! compute an LU factorization of a general M-by-N matrix A using
-     ! partial pivoting with row interchanges
-  interface
-     subroutine ZGETRF( M, N, A, LDA, IPIV, INFO )
-       integer, intent(in)    :: LDA, M, N
-       integer, intent(out)   :: IPIV(*), INFO
-       complex(Selected_Real_Kind(8)), intent(inout) :: A(LDA, N)
-     end subroutine ZGETRF
-
-     ! compute  the  inverse of a matrix using the LU factorization
-     ! computed by ZGETRF
-
-     subroutine ZGETRI( N, A, LDA, IPIV, WORK, LWORK, INFO )
-       integer, intent(in)    :: N, LDA, LWORK
-       integer, intent(in)    :: IPIV(*)
-       integer, intent(out)   :: INFO
-       complex(Selected_Real_Kind(8)), intent(inout)  :: A(LDA, N)
-       complex(Selected_Real_Kind(8)), intent(out)    :: WORK(LWORK)
-     end subroutine ZGETRI
-
-     subroutine DSTEV( JOBZ, N, D, E, Z, LDZ, WORK, INFO )
-       character, intent(in) :: JOBZ
-       integer, intent(in)   :: LDZ, N
-       integer, intent(out)  :: INFO
-       real(selected_real_kind(8)), intent(inout) :: D( * ), E( * )
-       real(selected_real_kind(8)), intent(out)   :: WORK( * ), Z( LDZ, * )
-     end subroutine DSTEV
-
-     SUBROUTINE DGESV( N, NRHS, A, LDA, IPIV, B, LDB, INFO )
-
-       INTEGER, intent(in)   ::    INFO, LDA, LDB, N, NRHS
-       INTEGER, intent(out)  ::    IPIV( * )
-       real(selected_real_kind(8)), intent(in)  :: A( LDA, * )
-       real(selected_real_kind(8)), intent(out) :: B( LDB, * )
-     END SUBROUTINE DGESV
-    end interface
-
-    interface inverse
-       module procedure inverse_cmplx, inverse_dble
-    end interface inverse
-
-    interface get_userARG
-       module procedure get_userARG_int, get_userARG_dble
-    end interface get_userARG
+  ! complex(dp), allocatable :: Omega(:)
+  ! logical :: Debug_Info = .False.
 
 contains
   !----------------------------------------------------------------------------------------------
@@ -149,55 +104,6 @@ contains
     write(*,*) trim(msg)
     stop
   end subroutine error_msg
-
-  !---------------------------------------------------------------------------------------------------------------------------------
-  subroutine get_userARG_int(arg_message, arg_value)
-    !
-    ! get user defined values interactively given from, typically, command line. This is used extensively in every algorithm contained
-    ! in this pacakge to specify interesting parameters for different problems. If the given parameter is reasonable and accepted, the 
-    ! default value will be replaced. Otherwise, it keeps the default one.
-
-    implicit none
-    character(len=*), intent(in) :: arg_message
-    integer, intent(out) :: arg_value
-
-    character(len=80) :: buffer
-
-    arg_value = 0
-    write(*, *)
-102 write(*, 101) trim(arg_message)
-
-    read(*, *) arg_value
- 
-    write(*, '(a15, i8, a35)') 'your inputs are', arg_value, ', do you want to continue? (yes/no)'
-    read(*, *) buffer
-    if (trim(buffer)=='n' .or. trim(buffer)=='no' .or. trim(buffer)=='N' .or. trim(buffer)=='NO') goto 102 
-   
-101 format (a20)
-
-  end subroutine  get_userARG_int
-
-  subroutine get_userARG_dble(arg_message, arg_value)
-
-    implicit none
-    character(len=*), intent(in) :: arg_message
-    real(dp), intent(out) :: arg_value
-
-    character(len=80) :: buffer
-
-    arg_value = Zero
-    write(*, *)
-102 write(*, 101) trim(arg_message)
-
-    read(*, *) arg_value
-
-    write(*, '(a23, f10.6, a35)') 'the input values are', arg_value, ', do you want to continue? (yes/no)'
-    read(*, *) buffer
-    if (trim(buffer)=='n' .or. trim(buffer)=='no' .or. trim(buffer)=='N' .or. trim(buffer)=='NO') goto 102
-
-101 format (a20)
-
-  end subroutine  get_userARG_dble
   
   !------------------------------------------------------------------------------------------------------ 
   subroutine system_mem_usage
@@ -261,68 +167,5 @@ contains
     close(100)
 
   end subroutine system_mem_usage
-
-  !---------------------------------------------------------------------------------------------------------------------------------
-  real(dp) function ranw()
-    !
-    ! Purpose
-    ! =======
-    !   random number generator, use the f90 intrinsic routin, random numbers
-    !   distuributes in (0, 1)
-
-    call random_number(ranw)
-
-  end function ranw
-
-  !-------------------------------------------------------------------------------------------------------------------
-  subroutine inverse_Cmplx(matrix_a, matrix_b, n)
-    !
-    ! Purpose
-    ! =======
-    !   complex matrix inversion operation
-    !
-    ! Arguments
-    ! =========
-    !
-    implicit none
-    integer, intent(in) :: n
-    complex(dp), intent(in)  :: matrix_a(n, n)
-    complex(dp), intent(out) :: matrix_b(n, n)
-
-    integer :: ipiv(n), info
-    complex(dp) :: y(n, n), work(n)
-
-    matrix_b = Zero
-    y = matrix_a
-    call zgetrf(n,n,y,n,ipiv,info)
-    call zgetri(n,y,n,ipiv,work,n,info)
-    matrix_b = y
-
-  end subroutine inverse_Cmplx
-
-  !--------------------------------------------------------------------------------------------------------------------
-  subroutine inverse_dble(matrix_a, matrix_b, n)
-    !
-    ! Purpose
-    ! =======
-    !   complex matrix inversion operation
-    !
-    ! Arguments
-    ! =========
-    !
-    implicit none
-    integer, intent(in) :: n
-    real(dp), intent(in)  :: matrix_a(n, n)
-    real(dp), intent(out) :: matrix_b(n, n)
-
-    integer :: ipiv(n), info
-    real(dp) :: y(n, n), work(n)
-
-    matrix_b = Zero
-    y = matrix_a
-    call dgetrf(n,n,y,n,ipiv,info)
-    call dgetri(n,y,n,ipiv,work,n,info)
-    matrix_b = y
-  end subroutine inverse_dble
 
 end module global_parameter

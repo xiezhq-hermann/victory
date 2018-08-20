@@ -27,6 +27,7 @@ module parquet_util
                           ! is used.
   integer :: Nx           ! linear dimension of a1. 
   integer :: Ny           ! linear dimension of a2. 
+  integer :: nOmega
   integer :: Nf           ! num of Matsubara frequencies
   integer :: Nt           ! linear dimension of combined momentum and frequency
                           ! variable 
@@ -293,6 +294,59 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine index_operation(idx1, idx2, operation, final_Indx)
+    !
+    ! Purpose
+    ! =======
+    !  For given two indices in the complete list, find out the resulting index for
+    !  a given operation.
+    !
+    type(Indxmap), intent(in)     :: idx1, idx2
+    ! character(len=30), intent(in) :: operation
+    integer, intent(in) :: operation
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    if (operation == FaddB) then 
+       i = idx1%ix + idx2%ix - 1
+       if (i > Nx) i = i - Nx
+       j = idx1%iy + idx2%iy - 1
+       if (j > Ny) j = j - Ny
+       k = idx1%iw + idx2%iw - 1      
+       final_Indx = indxmap(i, j, k)
+    end if
+
+    if (operation == FaddF) then
+       i = idx1%ix + idx2%ix - 1
+       if (i > Nx) i = i - Nx
+       j = idx1%iy + idx2%iy - 1
+       if (j > Ny) j = j - Ny
+       k = idx1%iw + idx2%iw - Nf 
+       final_Indx = indxmap(i, j, k)
+    end if
+
+    if (operation == MinusF) then
+       i = -idx1%ix + Nx + 2
+       if (i > Nx) i = i - Nx
+       j = -idx1%iy + Ny + 2
+       if (j > Ny) j = j - Ny
+       k = -idx1%iw + Nf + 1
+       final_Indx = indxmap(i, j, k)
+    end if
+
+    if (operation == MinusB) then
+       i = -idx1%ix + Nx + 2
+       if (i > Nx) i = i - Nx
+       j = -idx1%iy + Ny + 2
+       if (j > Ny) j = j - Ny
+       k = -idx1%iw + 2
+       final_indx = indxmap(i, j, k)
+    end if
+  end subroutine index_operation
+
+  !------------------------------------------------------------------------------
+  attributes(device) subroutine index_operation_gpu(idx1, idx2, operation, final_Indx)
     !
     ! Purpose
     ! =======

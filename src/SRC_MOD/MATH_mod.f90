@@ -7,10 +7,6 @@ module math_mod
   integer, parameter :: m_LM = 6         ! number of data to be fitted       
   real(dp) :: a(m_LM), y(m_LM), b_LM
 
-  interface simpson
-     module procedure Simpson_Dble, Simpson_Cmplx
-  end interface
-
   interface
      SUBROUTINE CGEEV( JOBVL, JOBVR, N, A, LDA, W, VL, LDVL, VR, LDVR,  &
                        WORK, LWORK, RWORK, INFO)
@@ -36,58 +32,6 @@ module math_mod
   end interface
   
 contains
-  !--------------------------------------------------------------------------
-  subroutine Simpson_Cmplx(Func, nL, h, solution)
-    
-    implicit none
-    integer, intent(in) :: nL
-    complex(dp), intent(in) ::  Func(nL)
-    complex(dp), intent(out) :: solution
-    real(dp), intent(in) :: h
-
-    integer :: i
-
-    if (Mod(nL, 2) == 0) then
-       print*, "nL must be odd!"
-       stop
-    endif
-
-    solution = (Func(1) + Func(nL))
-    do i = 2, nL-1, 2
-       solution = solution + 4.d0 * Func(i)
-    enddo
-    do i = 3, nL-2, 2
-       solution = solution + 2.d0 * Func(i)
-    enddo
-    solution = solution * h/3.d0
-
-  end subroutine Simpson_Cmplx
-
-  !-----------------------------------------------------!
-  subroutine Simpson_Dble(Func, nL, h, solution)
-
-    implicit none
-    integer, intent(in)   :: nL
-    real(dp), intent(in)  :: Func(nL), h
-    real(dp), intent(out) :: solution
-
-    integer :: i
-
-    if (Mod(nL, 2) == 0) then
-       print*, "nL must be odd!"
-       stop
-    endif
-
-    solution = (Func(1) + Func(nL))
-    do i = 2, nL-1, 2
-       solution = solution + 4.d0 * Func(i)
-    enddo
-    do i = 3, nL-2, 2
-       solution = solution + 2.d0 * Func(i)
-    enddo
-    solution = solution * h/3.d0
-
-  end subroutine Simpson_Dble
 
   !-----------------------------------------------------------------------  
   SUBROUTINE FDfit(L, Gt, dt, FD1,FD2)
