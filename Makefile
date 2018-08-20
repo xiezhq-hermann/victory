@@ -1,10 +1,10 @@
-include make.inc
+include make_pgi.inc
 
 DIR := ${PWD}
 
 ctqmc: 
 
-	@sed -i '3s|.*|DIR         = '${DIR}'|' make.inc
+	@sed -i '3s|.*|DIR         = '${DIR}'|' make_pgi.inc
 	@mkdir bin
 
 	@echo '---------------- DFFT ----------------------'

@@ -15,8 +15,8 @@
 LIB=dfftpack
 
 # Use these lines for Linux/g77
-FC=ifort
-FFLAGS=-O2 -funroll-loops 
+FC=pgf90
+FFLAGS=-O4 -Munroll
 
 # Use these lines for Solaris
 #FC=f77

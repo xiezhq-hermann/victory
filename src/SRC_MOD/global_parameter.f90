@@ -173,7 +173,7 @@ contains
     read(*, *) buffer
     if (trim(buffer)=='n' .or. trim(buffer)=='no' .or. trim(buffer)=='N' .or. trim(buffer)=='NO') goto 102 
    
-101 format (a<len(arg_message)>)
+101 format (a20)
 
   end subroutine  get_userARG_int
 
@@ -195,14 +195,16 @@ contains
     read(*, *) buffer
     if (trim(buffer)=='n' .or. trim(buffer)=='no' .or. trim(buffer)=='N' .or. trim(buffer)=='NO') goto 102
 
-101 format (a<len(arg_message)>)
+101 format (a20)
 
   end subroutine  get_userARG_dble
   
   !------------------------------------------------------------------------------------------------------ 
   subroutine system_mem_usage
-    USE IFPORT
     implicit none
+
+    integer :: getpid
+    
     real(kind=8) :: valueRSS
 
     character(len=200):: filename=' '

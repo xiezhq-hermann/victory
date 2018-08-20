@@ -1,5 +1,3 @@
-include "../SRC_MOD/enum.h"
-
 module parquet_equation
   !
   ! Purpose
