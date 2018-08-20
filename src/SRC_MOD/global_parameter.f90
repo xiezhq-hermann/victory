@@ -1,8 +1,20 @@
-#include "enum.h"
-
 module global_parameter
-  
+ 
   implicit none
+
+  integer, parameter :: BOSONIC_ =  0
+  integer, parameter :: FERMIONIC_ = 1
+
+  integer, parameter :: CHANNEL_D = 2
+  integer, parameter :: CHANNEL_M = 3
+  integer, parameter :: CHANNEL_S = 4
+  integer, parameter :: CHANNEL_T = 5
+
+  integer, parameter :: FADDB_    = 6
+  integer, parameter :: FADDF_    = 7
+  integer, parameter :: FSUBF_    = 8
+  integer, parameter :: MINUSF_   = 9
+  integer, parameter :: MINUSB_   = 10
 
   integer,  parameter :: dp = selected_real_kind(8)
   real(dp), parameter :: pi = acos(-1.d0)

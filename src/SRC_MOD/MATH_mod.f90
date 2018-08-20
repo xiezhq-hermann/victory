@@ -1,5 +1,3 @@
-#include "enum.h"
-
 module math_mod
  
   use global_parameter

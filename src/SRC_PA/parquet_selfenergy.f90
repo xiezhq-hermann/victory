@@ -1,5 +1,3 @@
-#include "../SRC_MOD/enum.h"
-
 module parquet_selfenergy
 
   use mpi_mod
