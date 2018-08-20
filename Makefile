@@ -2,7 +2,7 @@ include make_pgi.inc
 
 DIR := ${PWD}
 
-ctqmc: 
+ctqmc:
 
 	@sed -i '3s|.*|DIR         = '${DIR}'|' make_pgi.inc
 	@mkdir bin
@@ -14,6 +14,8 @@ ctqmc:
 	@echo
 	@echo '---------------- SRC_PA --------------------'
 	(cd $(DIR)/src/SRC_PA; make)
+	@echo '---------------- MOVE EXECUTABLE FILE -----------------'
+	(mv $(DIR)/bin/victory $(DIR)/out)
 
 clean:
 	(cd $(DIR)/src/SRC_MOD; make clean)
@@ -22,4 +24,3 @@ clean:
 	rm -f lib/lib.a
 	rm -f lib/libdfftpack.a
 	rm -r bin
-
