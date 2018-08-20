@@ -73,7 +73,7 @@ contains
                 mat = G_t  ! (4) triplet channel
              end select
 		          
-	  call MPI_BCAST(mat, Nt*Nt*Nb, MPI_DOUBLE_COMPLEX, inode, MPI_COMM_WORLD, rc) 
+	        call MPI_BCAST(mat, Nt*Nt*Nb, MPI_DOUBLE_COMPLEX, inode, MPI_COMM_WORLD, rc) 
 
 
           select case (ichannel)
