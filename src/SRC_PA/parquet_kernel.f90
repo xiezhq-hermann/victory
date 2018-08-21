@@ -28,6 +28,7 @@ contains
     if (.NOT. allocated(dummy3D_3)) allocate(dummy3D_3(Nt, Nt))
     if (.NOT. allocated(dummy3D_4)) allocate(dummy3D_4(Nt, Nt))
 
+    !$acc data
     do k = 1, Nb
        idx = id*Nb + k
 
@@ -78,18 +79,21 @@ contains
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1(1:Nt, 1:Nt), Nt, G_d(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_3, Nt)
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2(1:Nt, 1:Nt), Nt, G_m(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_4, Nt)
 
-       !$acc parallel loop
-       do i = 1, Nt
-          do j = 1, Nt
-             if (ite == 1) then
+       if (ite == 1) then
+          !$acc parallel loop
+          do i = 1, Nt
+             do j = 1, Nt
                 G_d(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
                 G_m(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
-             else
+       else
+          !$acc parallel loop
+          do i = 1, Nt
+             do j = 1, Nt
                 G_d(i, j, k) = (One-f_damping)*(F_d(i, j, k)-G_d(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
                 G_m(i, j, k) = (One-f_damping)*(F_m(i, j, k)-G_m(i, j, k)) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
-             end if
+            end do
           end do
-       end do
+       end if
 
        ! --- singlet (s) and triplet (t) channel ---
        G1        = Zero_c
@@ -137,19 +141,26 @@ contains
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1(1:Nt, 1:Nt), Nt, G_s(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_3, Nt)
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2(1:Nt, 1:Nt), Nt, G_t(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_4, Nt)
 
-       do i = 1, Nt
-          do j = 1, Nt
-             if (ite == 1) then
+       if (ite == 1) then
+          !$acc parallel loop
+          do i = 1, Nt
+             do j = 1, Nt
                 G_s(i, j, k) = (One-f_damping)*(Two*xU*Chi0_pp(idx)*Two*xU) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
                 G_t(i, j, k) = f_damping*dummy3D_4(i, j)
-             else
+            end do
+          end do
+       else
+          !$acc parallel loop
+          do i = 1, Nt
+             do j = 1, Nt
                 G_s(i, j, k) = (One-f_damping)*(F_s(i, j, k)-G_s(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
                 G_t(i, j, k) = (One-f_damping)*(F_t(i, j, k)-G_t(i, j, k)) + f_damping*dummy3D_4(i, j)
-             end if
+            end do
           end do
-       end do
+       end if
 
     end do
+    !$acc end data
 
     write(str, '(I0.3,a,I0.3)') ite, '-', id
     if (Nc <= 2) then

@@ -1,5 +1,5 @@
 FC          = mpifort
-FC_FLAGS    = -traceback -Mbounds -ta=tesla:managed -Minfo=accel
+FC_FLAGS    = -traceback -Mbounds -ta=tesla:cc70,managed -Minfo=accel
 DIR         = /home/richard/OpenACC_Hackathon/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread
