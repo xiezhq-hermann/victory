@@ -13,7 +13,7 @@ program main
 
   ! ... local vars ...
   integer       :: ite
-  real(dp)      :: t1, t2, t3, t4, t5
+  real(dp)      :: t1, t2, t3, t4, t5, t2_1
   logical           :: Converged
 
   complex(dp), allocatable :: Grt(:, :, :)
@@ -42,9 +42,11 @@ program main
      
      ! determine reducible vertex function and its kernel approximation
         call reducible_vertex(ite)
+        t2_1 = MPI_WTIME()
+        if (id == master) write(*, "(a, f12.6)") '  time spent on reducible_vertex is:', t2_1-t2
         call get_kernel_function(ite)
      t3 = MPI_WTIME()
-     if (id == master) write(*, "(a, f12.6)") '  time spent on kernel calculation is:', t3-t2
+     if (id == master) write(*, "(a, f12.6)") '  time spent on kernel calculation is:', t3-t2_1
 
      ! solve the parquet equation
      call solve_parquet_equation(ite)
