@@ -5,7 +5,7 @@ DIR := ${PWD}
 ctqmc: 
 
 	@sed -i '3s|.*|DIR         = '${DIR}'|' make_pgi.inc
-	@mkdir bin
+	@@[ -d bin ] || mkdir -p bin
 
 	@echo '---------------- DFFT ----------------------'
 	(cd $(DIR)/lib/dfftpack; make; mv libdfftpack.a ../libdfftpack.a)
