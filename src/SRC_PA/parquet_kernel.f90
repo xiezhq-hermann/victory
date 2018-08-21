@@ -55,8 +55,8 @@ contains
           G1 = G1 + xU*Gkw(i)*dummy*xU/beta/Nc
        end do
 
-       ! call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_d(1:Nt, 1:Nt, k), Nt, dummy3D_1(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_3, Nt)
-       ! call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_m(1:Nt, 1:Nt, k), Nt, dummy3D_2(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_4, Nt)
+       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_d(1:Nt, 1:Nt, k), Nt, dummy3D_1(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_3, Nt)
+       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_m(1:Nt, 1:Nt, k), Nt, dummy3D_2(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_4, Nt)
 
        ! Phi = F *G*G* Gamma
        do i = 1, Nt
