@@ -14,6 +14,9 @@ ctqmc:
 	@echo
 	@echo '---------------- SRC_PA --------------------'
 	(cd $(DIR)/src/SRC_PA; make)
+	@echo '---------------- MOVE EXECUTABLE FILE -----------------'
+	(mv $(DIR)/bin/victory $(DIR)/out)
+
 
 clean:
 	(cd $(DIR)/src/SRC_MOD; make clean)

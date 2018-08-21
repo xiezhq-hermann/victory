@@ -18,3 +18,5 @@ No MPI, Small GPU Kernels, No log writing, implement device function first and t
 
 - fftd2b (cuFFT), FDfit (math module), nfourier, index_operation, kernel
 
+We are GeekPie_HPC team and we are working on an application wrote in Fortran named victory, it's about calculating the energy and some other states of eletrons.
+In this afternoon, we compiled our program by PGI compiler and fixed some incompatible issues. There are plenty global parameters are shared and used by many functions and subroutines in our program, so we're still working on the data managment and unified memory. And now we planed to reform our data manage structure to enable some non-trivial directives.

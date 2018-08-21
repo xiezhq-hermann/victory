@@ -313,35 +313,27 @@ contains
        j = idx1%iy + idx2%iy - 1
        if (j > Ny) j = j - Ny
        k = idx1%iw + idx2%iw - 1      
-       final_Indx = indxmap(i, j, k)
-    end if
-
-    if (operation == FaddF) then
+    elseif (operation == FaddF) then
        i = idx1%ix + idx2%ix - 1
        if (i > Nx) i = i - Nx
        j = idx1%iy + idx2%iy - 1
        if (j > Ny) j = j - Ny
        k = idx1%iw + idx2%iw - Nf 
-       final_Indx = indxmap(i, j, k)
-    end if
-
-    if (operation == MinusF) then
+    elseif (operation == MinusF) then
        i = -idx1%ix + Nx + 2
        if (i > Nx) i = i - Nx
        j = -idx1%iy + Ny + 2
        if (j > Ny) j = j - Ny
        k = -idx1%iw + Nf + 1
-       final_Indx = indxmap(i, j, k)
-    end if
-
-    if (operation == MinusB) then
+    elseif (operation == MinusB) then
        i = -idx1%ix + Nx + 2
        if (i > Nx) i = i - Nx
        j = -idx1%iy + Ny + 2
        if (j > Ny) j = j - Ny
        k = -idx1%iw + 2
-       final_indx = indxmap(i, j, k)
     end if
+    final_indx = indxmap(i, j, k)
+    
   end subroutine index_operation
 
   !------------------------------------------------------------------------------
