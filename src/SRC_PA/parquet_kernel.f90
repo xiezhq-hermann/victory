@@ -10,6 +10,178 @@ module Parquet_kernel
   use parquet_util
 
 contains
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel0(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k)
+    integer, value :: idx, Nf, Nc, Fermionic, Nt, k
+    real(dp), value :: One, Pi, beta, mu, Two, xU
+    complex(dp), value :: xi
+    real(dp) :: Ek(:, :)
+    complex(dp) :: dummy, G1, Gkw(:), F_d(:, :, :), F_m(:, :, :), dummy3D_1(:, :), dummy3D_2(:, :)
+    type(Indxmap) :: ComIdx1, ComIdx2, Index_fermionic(:), Index_bosonic(:)
+    
+    integer :: i, j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+
+    call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1)
+    if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
+      ! use the non-interacting Green's function when k+q is outside of the box
+      dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
+    else
+      dummy = Gkw(list_index(ComIdx1, Fermionic))
+    end if
+    do j = 1, Nt
+      dummy3D_1(i, j) = F_d(i, j, k)*Gkw(i)*dummy/beta/Nc
+      dummy3D_2(i, j) = F_m(i, j, k)*Gkw(i)*dummy/beta/Nc
+    end do
+    G_1 = G_1 + xU*Gkw(i)*dummy*xU/beta/Nc
+
+  end subroutine reduc_kernel0
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel1(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k)
+    integer, value :: idx, Nf, Nc, Fermionic, Nt, k
+    real(dp), value :: One, Pi, beta, mu, Two, xU
+    complex(dp), value :: xi
+    real(dp) :: Ek(:, :)
+    complex(dp) :: dummy, G1, Gkw(:), F_d(:, :, :), F_m(:, :, :), dummy3D_1(:, :), dummy3D_2(:, :)
+    type(Indxmap) :: ComIdx1, ComIdx2, Index_fermionic(:), Index_bosonic(:)
+
+    integer :: i, j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+
+    call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1)
+    if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
+      ! use the non-interacting Green's function when k+q is outside of the box
+      dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
+    else
+      dummy = Gkw(list_index(ComIdx1, Fermionic))
+    end if
+    do j = 1, Nt
+      dummy3D_1(j, i) = F_d(j, i, k)*Gkw(i)*dummy/beta/Nc
+      dummy3D_2(j, i) = F_m(j, i, k)*Gkw(i)*dummy/beta/Nc
+    end do
+
+  end subroutine reduc_kernel1
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel2_0(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1)
+    integer, value :: k, idx
+    real(dp), value :: One, xU, f_damping
+    complex(dp), value :: G1
+    complex(dp) :: chi0_ph(:), G_d(:, :, :), G_m(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :)
+
+    integer :: i,j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+
+    G_d(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+    G_m(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+  
+  end subroutine reduc_kernel2_0
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel2_1(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1, F_d, F_m)
+    integer, value :: k, idx
+    real(dp), value :: One, xU, f_damping
+    complex(dp), value :: G1
+    complex(dp) :: chi0_ph(:), G_d(:, :, :), G_m(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :), F_d(:, :, :), F_m(:, :, :)
+
+    integer :: i,j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+
+    G_d(i, j, k) = (One-f_damping)*(F_d(i, j, k)-G_d(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+    G_m(i, j, k) = (One-f_damping)*(F_m(i, j, k)-G_m(i, j, k)) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+
+  end subroutine reduc_kernel2_1
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel3(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t)
+    integer, value :: idx, Nf, Nc, Fermionic, Nt, k
+    real(dp), value :: One, Pi, beta, mu, Two, xU, Half
+    complex(dp), value :: xi
+    real(dp) :: Ek(:, :)
+    complex(dp) :: dummy, G1, Gkw(:), F_d(:, :, :), F_m(:, :, :), dummy3D_1(:, :), dummy3D_2(:, :), F_s(:, :, :), F_t(:, :, :)
+    type(Indxmap) :: ComIdx1, ComIdx2, Index_fermionic(:), Index_bosonic(:)
+    
+    integer :: i, j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+
+    call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1)
+    call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2)
+
+    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
+      ! use the non-interacting green's function when q-k is outside the box
+      dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
+    else
+      dummy = Gkw(list_index(ComIdx2, Fermionic))
+    end if
+    do j = 1, Nt
+      dummy3D_1(i, j) = -Half*F_s(i, j, k)*Gkw(i)*dummy/beta/Nc
+      dummy3D_2(i, j) =  Half*F_t(i, j, k)*Gkw(i)*dummy/beta/Nc
+    end do
+    G1 = G1 - xU*Gkw(i)*dummy*(Two*xU)/beta/Nc
+
+  end subroutine reduc_kernel3
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel4(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t)
+    integer, value :: idx, Nf, Nc, Fermionic, Nt, k
+    real(dp), value :: One, Pi, beta, mu, Two, xU, Half
+    complex(dp), value :: xi
+    real(dp) :: Ek(:, :)
+    complex(dp) :: dummy, G1, Gkw(:), F_d(:, :, :), F_m(:, :, :), dummy3D_1(:, :), dummy3D_2(:, :), F_s(:, :, :), F_t(:, :, :)
+    type(Indxmap) :: ComIdx1, ComIdx2, Index_fermionic(:), Index_bosonic(:)
+
+    integer :: i, j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+
+    call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1)
+    call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2)
+    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
+      ! use the non-interacting green's function when q-k is outside the box
+      dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
+    else
+      dummy = Gkw(list_index(ComIdx2, Fermionic))
+    end if
+    do j = 1, Nt
+      dummy3D_1(j, i) = -Half*F_s(j, i, k)*Gkw(i)*dummy/beta/Nc
+      dummy3D_2(j, i) =  Half*F_t(j, i, k)*Gkw(i)*dummy/beta/Nc
+    end do
+
+end subroutine reduc_kernel4
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel5_0(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1)
+    integer, value :: k, idx
+    real(dp), value :: One, xU, f_damping, Two
+    complex(dp), value :: G1
+    complex(dp) :: Chi0_pp(:), G_s(:, :, :), G_t(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :)
+
+    integer :: i,j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+
+    G_s(i, j, k) = (One-f_damping)*(Two*xU*Chi0_pp(idx)*Two*xU) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
+    G_t(i, j, k) = f_damping*dummy3D_4(i, j)
+
+  end subroutine reduc_kernel5_0
+
+  !------------------------------------
+  attributes(global) subroutine reduc_kernel5_0(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1)
+    integer, value :: k, idx
+    real(dp), value :: One, xU, f_damping, Two
+    complex(dp), value :: G1
+    complex(dp) :: Chi0_pp(:), G_s(:, :, :), G_t(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :)
+    
+    integer :: i,j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+
+    G_s(i, j, k) = (One-f_damping)*(F_s(i, j, k)-G_s(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
+    G_t(i, j, k) = (One-f_damping)*(F_t(i, j, k)-G_t(i, j, k)) + f_damping*dummy3D_4(i, j)
+
+  end subroutine reduc_kernel5_1
   !-------------------------------------------------------------------------------------------
   subroutine reducible_vertex(ite)
      
@@ -38,57 +210,64 @@ contains
 
        ! --- density (d) and magnetic (m) channels ---
        !  Phi = Gamma *G*G* F
-       do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_bosonic(idx), FaddB, ComIdx1) ! k+q
-          idx1 = list_index(ComIdx1, Fermionic)
+       call reduc_kernel0<<<(Nt+63)/64, 64>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k)
+      !  do i = 1, Nt
+      !     call index_operation(Index_fermionic(i), Index_bosonic(idx), FaddB, ComIdx1) ! k+q
+      !     idx1 = list_index(ComIdx1, Fermionic)
           
-          if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
-             ! use the non-interacting Green's function when k+q is outside of the box
-             dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
-          else
-             dummy = Gkw(idx1) 
-          end if
-          do j = 1, Nt
-             dummy3D_1(i, j) = F_d(i, j, k)*Gkw(i)*dummy/beta/Nc
-             dummy3D_2(i, j) = F_m(i, j, k)*Gkw(i)*dummy/beta/Nc 
-          end do
-          G1 = G1 + xU*Gkw(i)*dummy*xU/beta/Nc
-       end do
+      !     if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
+      !        ! use the non-interacting Green's function when k+q is outside of the box
+      !        dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
+      !     else
+      !        dummy = Gkw(idx1) 
+      !     end if
+      !     do j = 1, Nt
+      !        dummy3D_1(i, j) = F_d(i, j, k)*Gkw(i)*dummy/beta/Nc
+      !        dummy3D_2(i, j) = F_m(i, j, k)*Gkw(i)*dummy/beta/Nc 
+      !     end do
+      !     G1 = G1 + xU*Gkw(i)*dummy*xU/beta/Nc
+      !  end do
        
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_d(1:Nt, 1:Nt, k), Nt, dummy3D_1(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_3, Nt)
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_m(1:Nt, 1:Nt, k), Nt, dummy3D_2(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_4, Nt)
 
-       ! Phi = F *G*G* Gamma
-       do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_bosonic(idx), FaddB, ComIdx1) ! k+q
-          idx1 = list_index(ComIdx1, Fermionic)
+       call reduc_kernel1<<<(Nt+63)/64, 64>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k)
 
-          if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
-             ! use the non-interacting Green's function when k+q is outside of the box
-             dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
-          else
-             dummy = Gkw(idx1)
-          end if
-          do j = 1, Nt
-             dummy3D_1(j, i) = F_d(j, i, k)*Gkw(i)*dummy/beta/Nc
-             dummy3D_2(j, i) = F_m(j, i, k)*Gkw(i)*dummy/beta/Nc
-          end do
-       end do
+      !  ! Phi = F *G*G* Gamma
+      !  do i = 1, Nt
+      !     call index_operation(Index_fermionic(i), Index_bosonic(idx), FaddB, ComIdx1) ! k+q
+      !     idx1 = list_index(ComIdx1, Fermionic)
+
+      !     if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
+      !        ! use the non-interacting Green's function when k+q is outside of the box
+      !        dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
+      !     else
+      !        dummy = Gkw(idx1)
+      !     end if
+      !     do j = 1, Nt
+      !        dummy3D_1(j, i) = F_d(j, i, k)*Gkw(i)*dummy/beta/Nc
+      !        dummy3D_2(j, i) = F_m(j, i, k)*Gkw(i)*dummy/beta/Nc
+      !     end do
+      !  end do
 
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1(1:Nt, 1:Nt), Nt, G_d(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_3, Nt)
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2(1:Nt, 1:Nt), Nt, G_m(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_4, Nt)
        
-       do i = 1, Nt
-          do j = 1, Nt
-             if (ite == 1) then
-                G_d(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
-                G_m(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
-             else
-                G_d(i, j, k) = (One-f_damping)*(F_d(i, j, k)-G_d(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
-                G_m(i, j, k) = (One-f_damping)*(F_m(i, j, k)-G_m(i, j, k)) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
-             end if
-          end do
-       end do
+      !  if (ite == 1) then
+      !   do i = 1, Nt
+      !     do j = 1, Nt      
+      !       G_d(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+      !       G_m(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+      !     end do
+      !   end do
+      !  else
+      !   do i = 1, Nt
+      !     do j = 1, Nt
+      !       G_d(i, j, k) = (One-f_damping)*(F_d(i, j, k)-G_d(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+      !       G_m(i, j, k) = (One-f_damping)*(F_m(i, j, k)-G_m(i, j, k)) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
+      !     end do
+      !   end do
+      !  end if
     
        ! --- singlet (s) and triplet (t) channel --- 
        G1        = Zero_c
@@ -96,57 +275,62 @@ contains
        dummy3D_4 = Zero_c
 
        ! Psi = Gamma *G*G* F
-       do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_fermionic(i), MinusF, ComIdx1)    !  -k
-          call index_operation(ComIdx1, Index_bosonic(idx), FaddB, ComIdx2)                ! q-k
-          idx1 = list_index(ComIdx2, Fermionic)
-          if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
-             ! use the non-interacting green's function when q-k is outside the box
-             dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
-          else
-             dummy = Gkw(idx1)
-          end if
-          do j = 1, Nt
-             dummy3D_1(i, j) = -Half*F_s(i, j, k)*Gkw(i)*dummy/beta/Nc
-             dummy3D_2(i, j) =  Half*F_t(i, j, k)*Gkw(i)*dummy/beta/Nc
-          end do
-          G1 = G1 - xU*Gkw(i)*dummy*(Two*xU)/beta/Nc
-       end do
+      !  do i = 1, Nt
+      !   call index_operation(Index_fermionic(i), Index_fermionic(i), MinusF, ComIdx1)    !  -k
+      !   call index_operation(ComIdx1, Index_bosonic(idx), FaddB, ComIdx2)                ! q-k
+      !   idx1 = list_index(ComIdx2, Fermionic)
+      !   if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
+      !      ! use the non-interacting green's function when q-k is outside the box
+      !      dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
+      !   else
+      !      dummy = Gkw(idx1)
+      !   end if
+      !   do j = 1, Nt
+      !      dummy3D_1(i, j) = -Half*F_s(i, j, k)*Gkw(i)*dummy/beta/Nc
+      !      dummy3D_2(i, j) =  Half*F_t(i, j, k)*Gkw(i)*dummy/beta/Nc
+      !   end do
+      !   G1 = G1 - xU*Gkw(i)*dummy*(Two*xU)/beta/Nc
+      !  end do
 
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_s(1:Nt, 1:Nt, k), Nt, dummy3D_1(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_3, Nt)
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_t(1:Nt, 1:Nt, k), Nt, dummy3D_2(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_4, Nt)
 
        ! Psi = F *G*G* Gamma
-       do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_fermionic(i), MinusF, ComIdx1)    !  -k
-          call index_operation(ComIdx1, Index_bosonic(idx), FaddB, ComIdx2)                ! q-k
-          idx1 = list_index(ComIdx2, Fermionic)
-          if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
-             ! use the non-interacting green's function when q-k is outside the box
-             dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
-          else
-             dummy = Gkw(idx1)
-          end if
-          do j = 1, Nt
-             dummy3D_1(j, i) = -Half*F_s(j, i, k)*Gkw(i)*dummy/beta/Nc
-             dummy3D_2(j, i) =  Half*F_t(j, i, k)*Gkw(i)*dummy/beta/Nc
-          end do
-       end do
+      !  do i = 1, Nt
+      !     call index_operation(Index_fermionic(i), Index_fermionic(i), MinusF, ComIdx1)    !  -k
+      !     call index_operation(ComIdx1, Index_bosonic(idx), FaddB, ComIdx2)                ! q-k
+      !     idx1 = list_index(ComIdx2, Fermionic)
+      !     if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
+      !        ! use the non-interacting green's function when q-k is outside the box
+      !        dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
+      !     else
+      !        dummy = Gkw(idx1)
+      !     end if
+      !     do j = 1, Nt
+      !        dummy3D_1(j, i) = -Half*F_s(j, i, k)*Gkw(i)*dummy/beta/Nc
+      !        dummy3D_2(j, i) =  Half*F_t(j, i, k)*Gkw(i)*dummy/beta/Nc
+      !     end do
+      !  end do
 
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1(1:Nt, 1:Nt), Nt, G_s(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_3, Nt)
        call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2(1:Nt, 1:Nt), Nt, G_t(1:Nt, 1:Nt, k), Nt, One_c, dummy3D_4, Nt)
 
-       do i = 1, Nt
-          do j = 1, Nt
-             if (ite == 1) then
-                G_s(i, j, k) = (One-f_damping)*(Two*xU*Chi0_pp(idx)*Two*xU) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
-                G_t(i, j, k) = f_damping*dummy3D_4(i, j)
-             else
-                G_s(i, j, k) = (One-f_damping)*(F_s(i, j, k)-G_s(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
-                G_t(i, j, k) = (One-f_damping)*(F_t(i, j, k)-G_t(i, j, k)) + f_damping*dummy3D_4(i, j)
-             end if
-          end do
-       end do
+      ! if (ite == 1) then
+      !   do i = 1, Nt
+      !     do j = 1, Nt
+      !       G_s(i, j, k) = (One-f_damping)*(Two*xU*Chi0_pp(idx)*Two*xU) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
+      !       G_t(i, j, k) = f_damping*dummy3D_4(i, j)
+      !     end do
+      !   end do
+      !  else
+      !   do i = 1, Nt
+      !     do j = 1, Nt
+      !       G_s(i, j, k) = (One-f_damping)*(F_s(i, j, k)-G_s(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
+      !       G_t(i, j, k) = (One-f_damping)*(F_t(i, j, k)-G_t(i, j, k)) + f_damping*dummy3D_4(i, j)
+      !     end do
+      !   end do
+      !  end if
+
        
     end do
 
