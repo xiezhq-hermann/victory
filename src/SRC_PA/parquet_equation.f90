@@ -22,6 +22,9 @@ contains
     integer       :: idx
     integer       :: i, j, k, i1, j1, k1
     integer       :: inode, ichannel
+
+    real(dp)      :: fchannel
+
     type(Indxmap) :: ComIdx1, ComIdx2, ComIdx3, ComIdx4, ComIdx5    ! combined index for momentum and frequency
     character(len=10) :: FLE, str
 
@@ -57,10 +60,8 @@ contains
 
     
     do ichannel = 1, 4
-     
-         do inode = 0, ntasks-1
-         
-             select case (ichannel)
+        do inode = 0, ntasks-1
+            select case (ichannel)
                 case (1)
                     mat = G_d ! (1) density channel
                 case (2)
@@ -69,263 +70,192 @@ contains
                     mat = G_s  ! (3) singlet channel
                 case (4)
                     mat = G_t  ! (4) triplet channel
-             end select
-		          
+            end select     
 	        call MPI_BCAST(mat, Nt*Nt*Nb, MPI_DOUBLE_COMPLEX, inode, MPI_COMM_WORLD, rc) 
 
+            select case (ichannel)
 
-          select case (ichannel)
-          case (1, 2) ! density and magnetic channel
-             !  
-             !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1) 
-             do i = 1, Nt      ! k
-                i1 = i         ! k1 = k
-                do k1 = 1, Nb  ! q1
-                   call index_operation_FaddB(Index_Fermionic(i), index_bosonic(inode*Nb+k1), ComIdx1)  ! k'=k+q1
-                   if (ComIdx1%iw >=1 .and. ComIdx1%iw <= Nf) then
-                      j = list_index(ComIdx1, Fermionic)
-                      do k = 1, Nb
-                         call index_operation_FaddB(index_fermionic(i), index_bosonic(id*Nb+k), ComIdx2)
-                         j1 = list_index(ComIdx2, Fermionic)   ! k1' = k + q
-                         if (ComIdx2%iw <= Nf .and. ComIdx2%iw >= 1) then
-                            if (ichannel == 1) then
-                               F_d(i, j, k) = F_d(i, j, k) - 0.5d0*mat(i1, j1, k1)
-                               F_m(i, j, k) = F_m(i, j, k) - 0.5d0*mat(i1, j1, k1)
-                            elseif (ichannel == 2) then
-                               F_d(i, j, k) = F_d(i, j, k) - 1.5d0*mat(i1, j1, k1)
-                               F_m(i, j, k) = F_m(i, j, k) + 0.5d0*mat(i1, j1, k1)
+                case (1, 2) ! density and magnetic channel
+                    !  
+                    fchannel = dble(ichannel)
+                    !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1) 
+                    do i = 1, Nt      ! k
+                        i1 = i         ! k1 = k
+                        do k1 = 1, Nb  ! q1
+                            call index_operation_FaddB(Index_Fermionic(i), index_bosonic(inode*Nb+k1), ComIdx1)  ! k'=k+q1
+                            if (ComIdx1%iw >=1 .and. ComIdx1%iw <= Nf) then
+                                j = list_index(ComIdx1, Fermionic)
+                                do k = 1, Nb
+                                    call index_operation_FaddB(index_fermionic(i), index_bosonic(id*Nb+k), ComIdx2)
+                                    j1 = list_index(ComIdx2, Fermionic)   ! k1' = k + q
+                                    if (ComIdx2%iw <= Nf .and. ComIdx2%iw >= 1) then
+                                        F_d(i, j, k) = F_d(i, j, k) - (fchannel - 0.5d0)*mat(i1, j1, k1)
+                                        F_m(i, j, k) = F_m(i, j, k) + (fchannel - 1.5d0)*mat(i1, j1, k1)
+                                    else
+                                        F_d(i, j, k) = F_d(i, j, k) - (fchannel - 0.5d0)*Kernel(ichannel + 1, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                                        F_m(i, j, k) = F_m(i, j, k) + (fchannel - 1.5d0)*Kernel(ichannel + 1, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                                    end if
+                                end do
                             end if
-                         else
-                            if (ichannel == 1) then
-                               F_d(i, j, k) = F_d(i, j, k) - 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
-                               F_m(i, j, k) = F_m(i, j, k) - 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
-                            elseif (ichannel == 2) then
-                               F_d(i, j, k) = F_d(i, j, k) - 1.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
-                               F_m(i, j, k) = F_m(i, j, k) + 0.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx2, index_bosonic(inode*Nb+k1))
+                        end do
+                        
+                        ! Time reversal symmetric part: Phi(k, k+q; k'-k) -> Phi(-k1, -k1'; -q1) = conjg(k1, k1'; q1) 
+                        call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
+                        i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
+                        do k1 = 1, Nb
+                            if (Index_Bosonic(inode*Nb+k1)%iw > 1) then
+                                call index_operation(ComIdx1, index_bosonic(inode*Nb+k1), FaddB, ComIdx2)  ! -k+q1
+                                call index_operation(ComIdx2, ComIdx2, MinusF, ComIdx3) ! k'=k-q1
+                                if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
+                                    j = list_index(ComIdx3, Fermionic)
+                                    do k = 1, Nb
+                                        call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx4) ! k+q
+                                        call index_operation(ComIdx4, ComIdx4, MinusF, ComIdx5)
+                                        j1 = list_index(ComIdx5, Fermionic)  
+                                        if (ComIdx5%iw <= Nf .and. ComIdx5%iw >= 1) then
+                                            F_d(i, j, k) = F_d(i, j, k) - (fchannel - 0.5d0)*conjg(mat(i1, j1, k1))
+                                            F_m(i, j, k) = F_m(i, j, k) + (fchannel - 1.5d0)*conjg(mat(i1, j1, k1))
+                                        else
+                                            F_d(i, j, k) = F_d(i, j, k) - (fchannel - 0.5d0)*conjg(Kernel(ichannel + 1, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
+                                            F_m(i, j, k) = F_m(i, j, k) + (fchannel - 1.5d0)*conjg(Kernel(ichannel + 1, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
+                                        end if
+                                    end do
+                                end if
                             end if
-                         end if
-                      end do
-                   end if
-                end do
-                
-                ! Time reversal symmetric part: Phi(k, k+q; k'-k) -> Phi(-k1, -k1'; -q1) = conjg(k1, k1'; q1) 
-                call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
-                i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
-                do k1 = 1, Nb
-                   if (Index_Bosonic(inode*Nb+k1)%iw > 1) then
-                      call index_operation(ComIdx1, index_bosonic(inode*Nb+k1), FaddB, ComIdx2)  ! -k+q1
-                      call index_operation(ComIdx2, ComIdx2, MinusF, ComIdx3) ! k'=k-q1
-                      if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
-                         j = list_index(ComIdx3, Fermionic)
-                         do k = 1, Nb
-                            call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx4) ! k+q
-                            call index_operation(ComIdx4, ComIdx4, MinusF, ComIdx5)
-                            j1 = list_index(ComIdx5, Fermionic)  
-                            if (ComIdx5%iw <= Nf .and. ComIdx5%iw >= 1) then
-                               if (ichannel == 1) then
-                                  F_d(i, j, k) = F_d(i, j, k) - 0.5d0*conjg(mat(i1, j1, k1))
-                                  F_m(i, j, k) = F_m(i, j, k) - 0.5d0*conjg(mat(i1, j1, k1))
-                               elseif (ichannel == 2) then
-                                  F_d(i, j, k) = F_d(i, j, k) - 1.5d0*conjg(mat(i1, j1, k1))
-                                  F_m(i, j, k) = F_m(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                               end if
-                            else
-                               if (ichannel == 1) then
-                                  F_d(i, j, k) = F_d(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
-                                  F_m(i, j, k) = F_m(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
-                               elseif (ichannel == 2) then
-                                  F_d(i, j, k) = F_d(i, j, k) - 1.5d0*conjg(Kernel(CHANNEL_M, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
-                                  F_m(i, j, k) = F_m(i, j, k) + 0.5d0*conjg(Kernel(CHANNEL_M, index_fermionic(i1), ComIdx5, index_bosonic(inode*Nb+k1)))
-                               end if
-                            end if
-                         end do
-                      end if
-                   end if
-                end do
-             end do
-             !
-             ! rotation 2: Phi(k, q-k'; k'-k) -> Phi(k1, k1'; q1)
-             !
-             do i = 1, Nt   ! k
-                i1 = i      ! k1 = k
-                do k1 = 1, Nb   ! q1
-                   call index_operation(index_fermionic(i), index_bosonic(inode*Nb+k1), FaddB, ComIdx1)  ! k'=k+q1
-                   if (ComIdx1%iw >=1 .and. ComIdx1%iw <= Nf) then
-                      j = list_index(ComIdx1, Fermionic)
-                      do k = 1, Nb  ! q
-                         call index_operation(ComIdx1, ComIdx1, MinusF, ComIdx2) ! -k'
-                         call index_operation(ComIdx2, index_bosonic(id*Nb+k), FaddB, ComIdx3) ! q-k'
-                         if (ComIdx3%iw >=1 .and. ComIdx3%iw <= Nf) then
-                            j1 = list_index(ComIdx3, Fermionic)
-                            if (ichannel == 1) then
-                               F_s(i, j, k) = F_s(i, j, k) + 0.5d0*mat(i1, j1, k1)
-                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*mat(i1, j1, k1)
-                            elseif (ichannel == 2) then
-                               F_s(i, j, k) = F_s(i, j, k) - 1.5d0*mat(i1, j1, k1)
-                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*mat(i1, j1, k1)
-                            end if
-                         else
-                            if (ichannel == 1) then
-                               F_s(i, j, k) = F_s(i, j, k) + 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
-                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*Kernel(CHANNEL_D, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
-                            else
-                               F_s(i, j, k) = F_s(i, j, k) - 1.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
-                               F_t(i, j, k) = F_t(i, j, k) - 0.5d0*Kernel(CHANNEL_M, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
-                            end if
-                         end if
-                      end do
-                   end if
-                end do
-
-                ! Time reversal symmetric part: Phi(k, q-k'; k'-k) -> Phi(-k1, -k1'; -q1)=conjg(Phi(k1, k1'; q1))
-                call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
-                i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
-                do k1 = 1, Nb ! q1
-                   if (index_Bosonic(inode*Nb+k1)%iw > 1) then
-                      call index_operation(ComIdx1, index_bosonic(inode*Nb+k1), FaddB, ComIdx2) ! -k+q1
-                      call index_operation(ComIdx2, ComIdx2, MinusF, ComIdx3) ! k'=k-q1
-                      if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
-                         j = list_index(ComIdx3, Fermionic)
-                         do k = 1, Nb
-                            call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! -k'
-                            call index_operation(ComIdx4, index_bosonic(id*Nb+k), FaddB, ComIdx5) ! q-k'
-                            call index_operation(ComIdx5, ComIdx5, MinusF, ComIdx4) ! k1' = k'-q 
-                            if (ComIdx4%iw >=1 .and. ComIdx4%iw <= Nf) then
-                               j1 = list_index(ComIdx4, Fermionic)
-                               if (ichannel == 1) then
-                                  F_s(i, j, k) = F_s(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(mat(i1, j1, k1))
-                               elseif (ichannel == 2) then
-                                  F_s(i, j, k) = F_s(i, j, k) - 1.5d0*conjg(mat(i1, j1, k1))
-                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(mat(i1, j1, k1))
-                               end if
-                            else
-                               if (ichannel == 1) then
-                                  F_s(i, j, k) = F_s(i, j, k) + 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
-                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
-                               else
-                                  F_s(i, j, k) = F_s(i, j, k) - 1.5d0*conjg(Kernel(CHANNEL_M, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
-                                  F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
-                               end if
-                            end if
-                         end do
-                      end if
-                   end if
-                end do
-             end do
-             !
-             ! rotation 3: Phi(k, k'; q-k-k') -> Phi(k1, k1'; q1)
-             !
-                do i = 1, Nt   ! k
-                i1 = i      ! k1 = k
-                do k1 = 1, Nb   ! q1
-                   call index_operation(index_fermionic(i), index_bosonic(inode*Nb+k1), FaddB, ComIdx1)  ! k+q1
-                    call index_operation(ComIdx1, ComIdx1, MinusF, ComIdx2) ! -k-q1
-                    do k = 1, Nb  ! q            
-                    call index_operation(ComIdx2, index_bosonic(id*Nb+k), FaddB, ComIdx3) ! k'=q-k-q1            
-                   if (ComIdx3%iw >=1 .and. ComIdx3%iw <= Nf) then
-                      j = list_index(ComIdx3, Fermionic)
-                            !j1 = j!list_index(ComIdx3, Fermionic)
-                            if (ichannel == 1) then
-                               F_s(i, j, k) = F_s(i, j, k) + 0.5d0*mat(i, j, k1)
-                               F_t(i, j, k) = F_t(i, j, k) + 0.5d0*mat(i, j, k1)
-                            elseif (ichannel == 2) then
-                               F_s(i, j, k) = F_s(i, j, k) - 1.5d0*mat(i, j, k1)
-                               F_t(i, j, k) = F_t(i, j, k) + 0.5d0*mat(i, j, k1)
-                            end if
-                         end if
-                      end do
-               
-                end do
-
-        	! Time reversal symmetric part: Phi(k, k'; q-k-k') -> Phi(-k1, -k1'; -q1) = conjg(k1, k1'; q1)            
-                call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
-                i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
-                do k1 = 1, Nb ! q1
-                   if (index_Bosonic(inode*Nb+k1)%iw > 1) then
-                      call index_operation(ComIdx1, index_bosonic(inode*Nb+k1), FaddB, ComIdx2)  ! -k+q1
-                    
-                    do k = 1, Nb  ! q            
-                    call index_operation(ComIdx2, index_bosonic(id*Nb+k), FaddB, ComIdx3) ! k'=q-k+q1
-                        if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
-                            j = list_index(ComIdx3, Fermionic)                   
-                        call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! -k'
-                            if (ComIdx4%iw >=1 .and. ComIdx4%iw <= Nf) then
-                               j1 = list_index(ComIdx4, Fermionic)
-                               if (ichannel == 1) then
-                                  F_s(i, j, k) = F_s(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                                  F_t(i, j, k) = F_t(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                               elseif (ichannel == 2) then
-                                  F_s(i, j, k) = F_s(i, j, k) - 1.5d0*conjg(mat(i1, j1, k1))
-                                  F_t(i, j, k) = F_t(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                               end if
-                            end if
-                        end if
-                    end do !Nb
-                      
-                   end if !q1%iw>0
-                end do !Nb
-             end do !Nt
-             
-      
-
-         case (3, 4)
-            !
-             ! rotation 4: Phi(k, k'; k+k'+q) -> Phi(k1, k1'; q1) 
-             !
-                do i = 1, Nt   ! k
-                do k = 1, Nb   ! q
-                   call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx1)  ! k+q
-                    call index_operation(ComIdx1, ComIdx1, MinusF, ComIdx2) ! -k-q
-                    do k1 = 1, Nb  ! q1            
-                    call index_operation(ComIdx2, index_bosonic(inode*Nb+k1), FaddB, ComIdx3) ! k'=q1-k-q            
-                   if (ComIdx3%iw >=1 .and. ComIdx3%iw <= Nf) then
-                      j = list_index(ComIdx3, Fermionic)
-                            if (ichannel == 3) then
-                               F_d(i, j, k) = F_d(i, j, k) + 0.5d0*mat(i, j, k1) 
-                               F_m(i, j, k) = F_m(i, j, k) - 0.5d0*mat(i, j, k1)
-                            elseif (ichannel == 4) then
-                               F_d(i, j, k) = F_d(i, j, k) + 1.5d0*mat(i, j, k1)
-                               F_m(i, j, k) = F_m(i, j, k) + 0.5d0*mat(i, j, k1)
-                            end if
-                         end if
-                      end do
-               
-                end do
-
-        	! Time reversal symmetric part: Phi(k, k'; q-k-k') -> Phi(-k1, -k1'; -q1) = conjg(k1, k1'; q1)            
-                call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
-                i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
-                do k = 1, Nb ! q
-                    call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx2)  ! k+q
-                    do k1 = 1, Nb  ! q1            
-                    if (index_Bosonic(inode*Nb+k1)%iw > 1) then  
-                    call index_operation(ComIdx2, index_bosonic(inode*Nb+k1), FaddB, ComIdx3) ! -k'=q1+k+q
-                        if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
-                        j1 = list_index(ComIdx3, Fermionic)              
-                        call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! k'=-q1-k-q
-                            if (ComIdx4%iw >=1 .and. ComIdx4%iw <= Nf) then
-                               j = list_index(ComIdx4, Fermionic)
-                               if (ichannel == 3) then
-                                  F_d(i, j, k) = F_d(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                                  F_m(i, j, k) = F_m(i, j, k) - 0.5d0*conjg(mat(i1, j1, k1))
-                               elseif (ichannel == 4) then
-                                  F_d(i, j, k) = F_d(i, j, k) + 1.5d0*conjg(mat(i1, j1, k1))
-                                  F_m(i, j, k) = F_m(i, j, k) + 0.5d0*conjg(mat(i1, j1, k1))
-                               end if
-             
-                            end if
-                        end if
-                    end if
+                        end do
                     end do
-                      
-                 
-                end do
-             end do
-             
-          end select
+                    !
+                    ! rotation 2: Phi(k, q-k'; k'-k) -> Phi(k1, k1'; q1)
+                    !
+                    do i = 1, Nt   ! k
+                        i1 = i      ! k1 = k
+                        do k1 = 1, Nb   ! q1
+                            call index_operation(index_fermionic(i), index_bosonic(inode*Nb+k1), FaddB, ComIdx1)  ! k'=k+q1
+                            if (ComIdx1%iw >=1 .and. ComIdx1%iw <= Nf) then
+                                j = list_index(ComIdx1, Fermionic)
+                                do k = 1, Nb  ! q
+                                    call index_operation(ComIdx1, ComIdx1, MinusF, ComIdx2) ! -k'
+                                    call index_operation(ComIdx2, index_bosonic(id*Nb+k), FaddB, ComIdx3) ! q-k'
+                                    if (ComIdx3%iw >=1 .and. ComIdx3%iw <= Nf) then
+                                        j1 = list_index(ComIdx3, Fermionic)
+                                        F_s(i, j, k) = F_s(i, j, k) + (fchannel - 0.5d0) * (2 - (fchannel - 0.5d0) * 2) * mat(i1, j1, k1)
+                                        F_t(i, j, k) = F_t(i, j, k) - 0.5d0*mat(i1, j1, k1)
+                                    else
+                                        F_s(i, j, k) = F_s(i, j, k) + (fchannel - 0.5d0) * (2 - (fchannel - 0.5d0) * 2) * Kernel(ichannel + 1, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
+                                        F_t(i, j, k) = F_t(i, j, k) - 0.5d0 * Kernel(ichannel + 1, index_fermionic(i1), ComIdx3, index_bosonic(inode*Nb+k1))
+                                    end if
+                                end do
+                            end if
+                        end do
 
-       end do
+                        ! Time reversal symmetric part: Phi(k, q-k'; k'-k) -> Phi(-k1, -k1'; -q1)=conjg(Phi(k1, k1'; q1))
+                        call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
+                        i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
+                        do k1 = 1, Nb ! q1
+                            if (index_Bosonic(inode*Nb+k1)%iw > 1) then
+                                call index_operation(ComIdx1, index_bosonic(inode*Nb+k1), FaddB, ComIdx2) ! -k+q1
+                                call index_operation(ComIdx2, ComIdx2, MinusF, ComIdx3) ! k'=k-q1
+                                if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
+                                    j = list_index(ComIdx3, Fermionic)
+                                    do k = 1, Nb
+                                        call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! -k'
+                                        call index_operation(ComIdx4, index_bosonic(id*Nb+k), FaddB, ComIdx5) ! q-k'
+                                        call index_operation(ComIdx5, ComIdx5, MinusF, ComIdx4) ! k1' = k'-q 
+                                        if (ComIdx4%iw >=1 .and. ComIdx4%iw <= Nf) then
+                                            j1 = list_index(ComIdx4, Fermionic)
+                                            F_s(i, j, k) = F_s(i, j, k) + (fchannel - 0.5d0) * (2 - (fchannel - 0.5d0) * 2) * mat(i1, j1, k1)
+                                            F_t(i, j, k) = F_t(i, j, k) - 0.5d0*mat(i1, j1, k1)
+                                        else
+                                            F_s(i, j, k) = F_s(i, j, k) + (fchannel - 0.5d0) * (2 - (fchannel - 0.5d0) * 2) * conjg(Kernel(ichannel + 1, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
+                                            F_t(i, j, k) = F_t(i, j, k) - 0.5d0*conjg(Kernel(CHANNEL_D, index_fermionic(i1), ComIdx4, index_bosonic(inode*Nb+k1)))
+                                        end if
+                                    end do
+                                end if
+                            end if
+                        end do
+                    end do
+                    !
+                    ! rotation 3: Phi(k, k'; q-k-k') -> Phi(k1, k1'; q1)
+                    !
+                    do i = 1, Nt   ! k
+                        i1 = i      ! k1 = k
+                        do k1 = 1, Nb   ! q1
+                            call index_operation(index_fermionic(i), index_bosonic(inode*Nb+k1), FaddB, ComIdx1)  ! k+q1
+                            call index_operation(ComIdx1, ComIdx1, MinusF, ComIdx2) ! -k-q1
+                            do k = 1, Nb  ! q            
+                                call index_operation(ComIdx2, index_bosonic(id*Nb+k), FaddB, ComIdx3) ! k'=q-k-q1            
+                                if (ComIdx3%iw >=1 .and. ComIdx3%iw <= Nf) then
+                                    j = list_index(ComIdx3, Fermionic)
+                                        !j1 = j!list_index(ComIdx3, Fermionic)
+                                    F_s(i, j, k) = F_s(i, j, k) + (fchannel - 0.5d0) * (2 - (fchannel - 0.5d0) * 2) * mat(i, j, k1)
+                                    F_t(i, j, k) = F_t(i, j, k) + 0.5d0*mat(i, j, k1)
+                                end if
+                            end do
+                        end do
+
+                    ! Time reversal symmetric part: Phi(k, k'; q-k-k') -> Phi(-k1, -k1'; -q1) = conjg(k1, k1'; q1)            
+                        call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
+                        i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
+                        do k1 = 1, Nb ! q1
+                            if (index_Bosonic(inode*Nb+k1)%iw > 1) then
+                                call index_operation(ComIdx1, index_bosonic(inode*Nb+k1), FaddB, ComIdx2)  ! -k+q1          
+                                do k = 1, Nb  ! q            
+                                    call index_operation(ComIdx2, index_bosonic(id*Nb+k), FaddB, ComIdx3) ! k'=q-k+q1
+                                    if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
+                                        j = list_index(ComIdx3, Fermionic)                   
+                                        call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! -k'
+                                        if (ComIdx4%iw >=1 .and. ComIdx4%iw <= Nf) then
+                                            j1 = list_index(ComIdx4, Fermionic)
+                                            F_s(i, j, k) = F_s(i, j, k) + (fchannel - 0.5d0) * (2 - (fchannel - 0.5d0) * 2) * conjg(mat(i1, j, k1))
+                                            F_t(i, j, k) = F_t(i, j, k) + 0.5d0*conjg(mat(i1, j, k1))
+                                        end if
+                                    end if
+                                end do !Nb 
+                            end if !q1%iw>0
+                        end do !Nb
+                    end do !Nt        
+
+                case (3, 4)
+                    fchannel = dble(ichannel)
+                    ! rotation 4: Phi(k, k'; k+k'+q) -> Phi(k1, k1'; q1) 
+                    !
+                        do i = 1, Nt   ! k
+                            do k = 1, Nb   ! q
+                                call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx1)  ! k+q
+                                call index_operation(ComIdx1, ComIdx1, MinusF, ComIdx2) ! -k-q
+                                do k1 = 1, Nb  ! q1            
+                                    call index_operation(ComIdx2, index_bosonic(inode*Nb+k1), FaddB, ComIdx3) ! k'=q1-k-q            
+                                    if (ComIdx3%iw >=1 .and. ComIdx3%iw <= Nf) then
+                                        j = list_index(ComIdx3, Fermionic)
+                                        F_d(i, j, k) = F_d(i, j, k) + (fchannel - 2.5)*mat(i, j, k1)
+                                        F_m(i, j, k) = F_m(i, j, k) + (fchannel - 3.5)*mat(i, j, k1)
+                                    end if
+                                end do
+                            end do
+
+                    ! Time reversal symmetric part: Phi(k, k'; q-k-k') -> Phi(-k1, -k1'; -q1) = conjg(k1, k1'; q1)            
+                            call index_operation(Index_Fermionic(i), index_Fermionic(i), MinusF, ComIdx1) ! -k
+                            i1 = list_index(ComIdx1, Fermionic)  ! k1 = -k
+                            do k = 1, Nb ! q
+                                call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx2)  ! k+q
+                                do k1 = 1, Nb  ! q1            
+                                    if (index_Bosonic(inode*Nb+k1)%iw > 1) then  
+                                        call index_operation(ComIdx2, index_bosonic(inode*Nb+k1), FaddB, ComIdx3) ! -k'=q1+k+q
+                                        if (ComIdx3%iw >= 1 .and. ComIdx3%iw <= Nf) then
+                                            j1 = list_index(ComIdx3, Fermionic)              
+                                            call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! k'=-q1-k-q
+                                            if (ComIdx4%iw >=1 .and. ComIdx4%iw <= Nf) then
+                                                j = list_index(ComIdx4, Fermionic)
+                                                F_d(i, j, k) = F_d(i, j, k) + (fchannel - 2.5)*mat(i1, j1, k1)
+                                                F_m(i, j, k) = F_m(i, j, k) + (fchannel - 3.5)*mat(i1, j1, k1)
+                                            end if
+                                        end if
+                                    end if
+                                end do
+                            end do
+                        end do
+                end select
+        end do
     end do
 
 

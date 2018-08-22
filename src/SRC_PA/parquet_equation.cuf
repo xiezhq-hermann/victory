@@ -22,8 +22,8 @@ attributes(global) subroutine Gamma_plus_Phi(G_d, G_m, G_s, G_t, &
     complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: F_d, F_m, F_s, F_t
 
     ! ... local vars ... 
-    integer, value :: i, j, k
-    integer, value :: ip ,jp
+    integer                     :: i, j, k
+    integer                     :: ip ,jp
 
     i = (blockidx%x-1) * blockdim%x + threadidx%x
     j = (blockidx%y-1) * blockdim%y + threadidx%y
@@ -53,11 +53,29 @@ attributes(global) subroutine Gamma_plus_Phi(G_d, G_m, G_s, G_t, &
 end subroutine
 
 attributes(global) subroutine Parquet_Equation_d_m(G_d, G_m, G_s, G_t, &
-                                           L_d, L_m, L_s, L_t, &
-                                           Nt, Nt, Nb, &
-                                           Nb, Nc, Nf, &
-                                           id, &
-                                           Index_Bosonic, &
-                                           F_d, F_m, F_s, F_t)
+                                                   L_d, L_m, L_s, L_t, &
+                                                   Nt, Nt, Nb, &
+                                                   Nb, Nc, Nf, &
+                                                   id, &
+                                                   Index_Bosonic, &
+                                                   F_d, F_m, F_s, F_t)
+implicit none
+integer,        intent(in)  :: Nt, Nt, Nb
+
+complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: G_d, G_m, G_s, G_t
+complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: L_d, L_m, L_s, L_t
+
+integer,        intent(in)  :: Nb, Nc, Nf
+integer,        intent(in)  :: id
+
+type(indxmap),  intent(in)  :: Index_Bosonic
+
+complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: F_d, F_m, F_s, F_t
+
+! ... local vars ... 
+integer                     :: i, j, k
+integer                     :: ip ,jp
+                                               
+
 
 end subroutine
