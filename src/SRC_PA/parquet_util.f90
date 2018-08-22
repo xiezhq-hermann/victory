@@ -336,6 +336,74 @@ contains
     
   end subroutine index_operation
 
+  attributes(device) subroutine index_operation_FaddB(idx1, idx2, final_Indx)
+
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = idx1%ix + idx2%ix - 1
+      if (i > Nx) i = i - Nx
+    j = idx1%iy + idx2%iy - 1
+      if (j > Ny) j = j - Ny
+    k = idx1%iw + idx2%iw - 1
+    
+    final_indx = indxmap(i, j, k)
+
+  end subroutine index_operation_FaddB
+
+  attributes(device) subroutine index_operation_FaddF(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = idx1%ix + idx2%ix - 1
+    if (i > Nx) i = i - Nx
+    j = idx1%iy + idx2%iy - 1
+    if (j > Ny) j = j - Ny
+    k = idx1%iw + idx2%iw - Nf 
+
+    final_indx = indxmap(i, j, k)
+    
+  end subroutine index_operation_FaddF
+
+  attributes(device) subroutine index_operation_MinusF(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+    i = -idx1%ix + Nx + 2
+    if (i > Nx) i = i - Nx
+    j = -idx1%iy + Ny + 2
+    if (j > Ny) j = j - Ny
+    k = -idx1%iw + Nf + 1
+
+    final_indx = indxmap(i, j, k)
+    
+  end subroutine index_operation_MinusF
+
+  attributes(device) subroutine index_operation_MinusB(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = -idx1%ix + Nx + 2
+    if (i > Nx) i = i - Nx
+    j = -idx1%iy + Ny + 2
+    if (j > Ny) j = j - Ny
+    k = -idx1%iw + 2
+
+    final_indx = indxmap(i, j, k)
+    
+  end subroutine index_operation_MinusB
+
   !------------------------------------------------------------------------------
   subroutine pa_Gkw_Chi0(ite, Grt)
     !
