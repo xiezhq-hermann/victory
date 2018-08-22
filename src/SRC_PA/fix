@@ -1,0 +1,2 @@
+mpifort -O3 -o ~/OpenACC_Hackathon/victory/bin/victoryi  parquet_util.o parquet_kernel.o parquet_equation.o parquet_selfenergy.o parquet_phys.o main.o  -lblas -llapack -lpthread  -traceback -Mbounds -ta=tesla:cc70,managed -Minfo=accel -Mcuda -Mcudalib=cublas -I~/OpenACC_Hackathon/victory/src/SRC_MOD  ../SRC_MOD/global_parameter.o ../SRC_MOD/MPI_mod.o ../SRC_MOD/MATH_mod.o ~/OpenACC_Hackathon/victory/lib/libdfftpack.a
+

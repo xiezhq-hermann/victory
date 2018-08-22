@@ -1,5 +1,5 @@
 FC          = mpifort
-FC_FLAGS    = -Mbounds -fast
+FC_FLAGS    = -fast -ta=tesla:cc70,managed -Minfo=accel -Mcuda -Mcudalib=cublas
 DIR         = /home/richard/OpenACC_Hackathon/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread 

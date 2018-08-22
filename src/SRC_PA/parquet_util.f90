@@ -30,6 +30,7 @@ module parquet_util
   integer :: Nf           ! num of Matsubara frequencies
   integer :: Nt           ! linear dimension of combined momentum and frequency
                           ! variable 
+  !$acc declare create(Nx, Ny, Nf, Nt) 
   integer :: Nc           ! total number of sites
   integer :: Nb           ! the number of bosonic variables used for the massive
                           ! parallization.
@@ -279,7 +280,7 @@ contains
     type(Indxmap), intent(in) :: P
     ! character(len=30), intent(in) :: typ
     integer, intent(in) :: typ
-
+    !$acc routine
     if (typ == BOSONIC_) then
        idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
     elseif (typ == FERMIONIC_) then
@@ -305,7 +306,7 @@ contains
 
     ! ... local vars ...
     integer :: i, j, k
-
+    !$acc routine
     i = idx1%ix + idx2%ix - 1
       if (i > Nx) i = i - Nx
     j = idx1%iy + idx2%iy - 1
@@ -322,7 +323,7 @@ contains
 
     ! ... local vars ...
     integer :: i, j, k
-
+    !$acc routine
     i = idx1%ix + idx2%ix - 1
     if (i > Nx) i = i - Nx
     j = idx1%iy + idx2%iy - 1
@@ -339,6 +340,7 @@ contains
 
     ! ... local vars ...
     integer :: i, j, k
+    !$acc routine
     i = -idx1%ix + Nx + 2
     if (i > Nx) i = i - Nx
     j = -idx1%iy + Ny + 2
@@ -355,7 +357,7 @@ contains
 
     ! ... local vars ...
     integer :: i, j, k
-
+    !$acc routine
     i = -idx1%ix + Nx + 2
     if (i > Nx) i = i - Nx
     j = -idx1%iy + Ny + 2

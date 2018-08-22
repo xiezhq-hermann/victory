@@ -78,7 +78,8 @@ contains
                 case (1, 2) ! density and magnetic channel
                     !  
                     fchannel = dble(ichannel)
-                    !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1) 
+                    !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1)
+                    !$acc parallel loop gang
                     do i = 1, Nt      ! k
                         i1 = i         ! k1 = k
                         do k1 = 1, Nb  ! q1
@@ -124,6 +125,8 @@ contains
                             end if
                         end do
                     end do
+                    !$acc end parallel loop
+                    
                     !
                     ! rotation 2: Phi(k, q-k'; k'-k) -> Phi(k1, k1'; q1)
                     !

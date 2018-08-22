@@ -321,7 +321,7 @@ contains
     integer       :: ic, jc, qc, iw, jw, qw, idx, idx1 
     type(Indxmap) :: k1_, k2_, q_
     complex(dp)   :: background
-    
+    !$acc routine
     if (q%iw > 0) then
        k1_ = k1
        k2_ = k2
