@@ -360,7 +360,7 @@ contains
           if (jw > Nf .or. jw < 1) then
              kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic))
           else
-             Kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_d2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
+             Kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_d2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - ba  ckground
           end if
        end if       
     case (CHANNEL_M)

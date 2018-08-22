@@ -61,14 +61,14 @@ contains
          do inode = 0, ntasks-1
          
              select case (ichannel)
-             case (1)
-                mat = G_d ! (1) density channel
-             case (2)
-                mat = G_m  ! (2) magnetic channel 
-             case (3)
-                mat = G_s  ! (3) singlet channel
-             case (4)
-                mat = G_t  ! (4) triplet channel
+                case (1)
+                    mat = G_d ! (1) density channel
+                case (2)
+                    mat = G_m  ! (2) magnetic channel 
+                case (3)
+                    mat = G_s  ! (3) singlet channel
+                case (4)
+                    mat = G_t  ! (4) triplet channel
              end select
 		          
 	        call MPI_BCAST(mat, Nt*Nt*Nb, MPI_DOUBLE_COMPLEX, inode, MPI_COMM_WORLD, rc) 
@@ -78,15 +78,14 @@ contains
           case (1, 2) ! density and magnetic channel
              !  
              !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1) 
-             !
              do i = 1, Nt      ! k
                 i1 = i         ! k1 = k
                 do k1 = 1, Nb  ! q1
-                   call index_operation(Index_Fermionic(i), index_bosonic(inode*Nb+k1), FaddB, ComIdx1)  ! k'=k+q1
+                   call index_operation_FaddB(Index_Fermionic(i), index_bosonic(inode*Nb+k1), ComIdx1)  ! k'=k+q1
                    if (ComIdx1%iw >=1 .and. ComIdx1%iw <= Nf) then
                       j = list_index(ComIdx1, Fermionic)
                       do k = 1, Nb
-                         call index_operation(index_fermionic(i), index_bosonic(id*Nb+k), FaddB, ComIdx2)
+                         call index_operation_FaddB(index_fermionic(i), index_bosonic(id*Nb+k), ComIdx2)
                          j1 = list_index(ComIdx2, Fermionic)   ! k1' = k + q
                          if (ComIdx2%iw <= Nf .and. ComIdx2%iw >= 1) then
                             if (ichannel == 1) then

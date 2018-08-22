@@ -1,0 +1,63 @@
+attributes(global) subroutine Gamma_plus_Phi(G_d, G_m, G_s, G_t, &
+                                           L_d, L_m, L_s, L_t, &
+                                           Nt, Nt, Nb, &
+                                           Nb, Nc, Nf, &
+                                           id, &
+                                           Index_Bosonic, &
+                                           F_d, F_m, F_s, F_t)
+    ! This subroutine corresponds to the first part of the four parquet equations
+    ! F(q) = G(q) + Phi(q)
+    !
+    implicit none
+    integer,        intent(in)  :: Nt, Nt, Nb
+
+    complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: G_d, G_m, G_s, G_t
+    complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: L_d, L_m, L_s, L_t
+
+    integer,        intent(in)  :: Nb, Nc, Nf
+    integer,        intent(in)  :: id
+
+    type(indxmap),  intent(in)  :: Index_Bosonic
+    
+    complex(dp),    dimension(Nt, Nt, Nb),  intent(in)  :: F_d, F_m, F_s, F_t
+
+    ! ... local vars ... 
+    integer, value :: i, j, k
+    integer, value :: ip ,jp
+
+    i = (blockidx%x-1) * blockdim%x + threadidx%x
+    j = (blockidx%y-1) * blockdim%y + threadidx%y
+
+    if (i > Nt .OR. j > Nt) return
+
+    if (i /= Nf) then
+        ip = mod(i, Nf)
+    else
+        ip = Nf
+    end if
+
+    if (j /= Nf) then
+        jp = mod(j, Nf)
+    else
+        jp = Nf
+    end if
+
+    do k = 1, Nb
+        idx = Index_Bosonic(id*Nb+k)%iw
+        F_d(i, j, k) = F_d(i, j, k) + L_d(ip, jp, idx)
+        F_m(i, j, k) = F_m(i, j, k) + L_m(ip, jp, idx)
+        F_s(i, j, k) = F_s(i, j, k) + L_s(ip, jp, idx)
+        F_t(i, j, k) = F_t(i, j, k) + L_t(ip, jp, idx)
+    end do
+        
+end subroutine
+
+attributes(global) subroutine Parquet_Equation_d_m(G_d, G_m, G_s, G_t, &
+                                           L_d, L_m, L_s, L_t, &
+                                           Nt, Nt, Nb, &
+                                           Nb, Nc, Nf, &
+                                           id, &
+                                           Index_Bosonic, &
+                                           F_d, F_m, F_s, F_t)
+
+end subroutine

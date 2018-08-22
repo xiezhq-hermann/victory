@@ -292,49 +292,79 @@ contains
   end function list_index
 
   !------------------------------------------------------------------------------
-  subroutine index_operation(idx1, idx2, operation, final_Indx)
-    !
-    ! Purpose
-    ! =======
-    !  For given two indices in the complete list, find out the resulting index for
-    !  a given operation.
-    !
+  !
+  ! Purpose
+  ! =======
+  !  For given two indices in the complete list, find out the resulting index for
+  !  a given operation.
+  !
+  subroutine index_operation_FaddB(idx1, idx2, final_Indx)
+
     type(Indxmap), intent(in)     :: idx1, idx2
-    ! character(len=30), intent(in) :: operation
-    integer, intent(in) :: operation
     type(Indxmap), intent(out)    :: final_Indx
 
     ! ... local vars ...
     integer :: i, j, k
 
-    if (operation == FaddB) then 
-       i = idx1%ix + idx2%ix - 1
-       if (i > Nx) i = i - Nx
-       j = idx1%iy + idx2%iy - 1
-       if (j > Ny) j = j - Ny
-       k = idx1%iw + idx2%iw - 1      
-    elseif (operation == FaddF) then
-       i = idx1%ix + idx2%ix - 1
-       if (i > Nx) i = i - Nx
-       j = idx1%iy + idx2%iy - 1
-       if (j > Ny) j = j - Ny
-       k = idx1%iw + idx2%iw - Nf 
-    elseif (operation == MinusF) then
-       i = -idx1%ix + Nx + 2
-       if (i > Nx) i = i - Nx
-       j = -idx1%iy + Ny + 2
-       if (j > Ny) j = j - Ny
-       k = -idx1%iw + Nf + 1
-    elseif (operation == MinusB) then
-       i = -idx1%ix + Nx + 2
-       if (i > Nx) i = i - Nx
-       j = -idx1%iy + Ny + 2
-       if (j > Ny) j = j - Ny
-       k = -idx1%iw + 2
-    end if
+    i = idx1%ix + idx2%ix - 1
+      if (i > Nx) i = i - Nx
+    j = idx1%iy + idx2%iy - 1
+      if (j > Ny) j = j - Ny
+    k = idx1%iw + idx2%iw - 1
+    
+    final_indx = indxmap(i, j, k)
+
+  end subroutine index_operation_FaddB
+
+  subroutine index_operation_FaddF(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = idx1%ix + idx2%ix - 1
+    if (i > Nx) i = i - Nx
+    j = idx1%iy + idx2%iy - 1
+    if (j > Ny) j = j - Ny
+    k = idx1%iw + idx2%iw - Nf 
+
     final_indx = indxmap(i, j, k)
     
   end subroutine index_operation
+
+  subroutine index_operation_MinusF(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+    i = -idx1%ix + Nx + 2
+    if (i > Nx) i = i - Nx
+    j = -idx1%iy + Ny + 2
+    if (j > Ny) j = j - Ny
+    k = -idx1%iw + Nf + 1
+
+    final_indx = indxmap(i, j, k)
+    
+  end subroutine index_operation_MinusF
+
+  subroutine index_operation_MinusB(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = -idx1%ix + Nx + 2
+    if (i > Nx) i = i - Nx
+    j = -idx1%iy + Ny + 2
+    if (j > Ny) j = j - Ny
+    k = -idx1%iw + 2
+
+    final_indx = indxmap(i, j, k)
+    
+  end subroutine index_operation_MinusB
 
   !------------------------------------------------------------------------------
   subroutine pa_Gkw_Chi0(ite, Grt)
@@ -369,7 +399,6 @@ contains
     ! character(len=10) :: Mtype
     integer :: Mtype
 
-
     if (.NOT. allocated(Gkw))     allocate(Gkw(Nt))
     if (.NOT. allocated(Sigma))   allocate(Sigma(Nt))
     if (ite == 1) Sigma = Zero
@@ -377,7 +406,7 @@ contains
        do j = 1, Ny
           idx = (Ny*(i-1)+j)*Nf
           Sigma_H(i, j) = Sigma(idx)
-          if (id == master) write(*, "('Hartree energy for', 2i4, ' is', 2f12.6 )") i, j, Sigma_H(i, j)
+          ! if (id == master) write(*, "('Hartree energy for', 2i4, ' is', 2f12.6 )") i, j, Sigma_H(i, j)
        end do
     end do    
 
@@ -422,7 +451,7 @@ contains
 
     t1 = -Two*Grt(1, 1, Nf)
 
-    if (id == master) write(*, "(' particle number is:', f12.6, ' chemical potential is', f12.6)") t1, mu
+    ! if (id == master) write(*, "(' particle number is:', f12.6, ' chemical potential is', f12.6)") t1, mu
     if (abs(t1 - nParticle) > 1.d-4) then
        if (t1 > nParticle) then
           mu_UpperBound = mu
@@ -434,36 +463,36 @@ contains
     end if
    
     ! output the Green's function in k-w space
-    if (id == master) then
-       write(str1, '(I0.3)') ite
-       FLE = 'Gkw-'//trim(str1)//'.dat'
-       open(unit=1, file=FLE, status='unknown')    
-       do i = 1, Nx
-          kx = dkx*(i-1)
-          do j = 1, Ny
-             ky = dky*(j-1)
-             do k = 1, Nf
-                idx = (Ny*(i-1)+j-1)*Nf + k
-                write(1, '(2f12.6, 3f20.12)') kx, ky, Pi/beta*(Two*(k-Nf/2)-One), Gkw(idx)
-             end do
-             write(1, *)
-          end do
-       end do
-       close(1)
+    ! if (id == master) then
+    !    write(str1, '(I0.3)') ite
+    !    FLE = 'Gkw-'//trim(str1)//'.dat'
+    !    open(unit=1, file=FLE, status='unknown')    
+    !    do i = 1, Nx
+    !       kx = dkx*(i-1)
+    !       do j = 1, Ny
+    !          ky = dky*(j-1)
+    !          do k = 1, Nf
+    !             idx = (Ny*(i-1)+j-1)*Nf + k
+    !             write(1, '(2f12.6, 3f20.12)') kx, ky, Pi/beta*(Two*(k-Nf/2)-One), Gkw(idx)
+    !          end do
+    !          write(1, *)
+    !       end do
+    !    end do
+    !    close(1)
        
-       ! output the Green's function in r-t space
-       FLE = 'Grt-'//trim(str1)//'.dat'
-       open(unit=1, file=FLE, status='unknown')
-       do i = 1, Nx
-          do j = 1, Ny
-             do k = 1, Nf
-                write(1, '(2i4, 3f20.12)') i, j, beta/(Nf-1)*(k-1), Grt(i, j, k)
-             end do
-             write(1, *)
-          end do
-       end do
-       close(1)
-    end if
+    !    ! output the Green's function in r-t space
+    !    FLE = 'Grt-'//trim(str1)//'.dat'
+    !    open(unit=1, file=FLE, status='unknown')
+    !    do i = 1, Nx
+    !       do j = 1, Ny
+    !          do k = 1, Nf
+    !             write(1, '(2i4, 3f20.12)') i, j, beta/(Nf-1)*(k-1), Grt(i, j, k)
+    !          end do
+    !          write(1, *)
+    !       end do
+    !    end do
+    !    close(1)
+    ! end if
 
     !
     ! Now, determine the bubble diagram of two convoluted Green's function, which will be 
@@ -534,24 +563,24 @@ contains
        end do
     end do
     
-    ! --- monitoring the bubble results ---
-    if (id == master) then
-       FLE = 'Chi0-'//trim(str1)//'.dat'
-       open(unit=1, file=FLE, status='unknown')
-       do i = 1, Nx
-          kx = dkx*(i-1)
-          do j = 1, Ny
-             ky = dky*(j-1)
-             do k = 1, Nf/2
-                idx = (Ny*(i-1)+j-1)*Nf/2 + k
-                write(1, '(2f12.6, 5f12.6)') kx, ky, Pi/beta*Two*(k-1), &
-                     Chi0_ph(idx), Chi0_pp(idx) 
-             end do
-             write(1, *)
-          end do
-       end do
-       close(1)
-    end if
+    ! ! --- monitoring the bubble results ---
+    ! if (id == master) then
+    !    FLE = 'Chi0-'//trim(str1)//'.dat'
+    !    open(unit=1, file=FLE, status='unknown')
+    !    do i = 1, Nx
+    !       kx = dkx*(i-1)
+    !       do j = 1, Ny
+    !          ky = dky*(j-1)
+    !          do k = 1, Nf/2
+    !             idx = (Ny*(i-1)+j-1)*Nf/2 + k
+    !             write(1, '(2f12.6, 5f12.6)') kx, ky, Pi/beta*Two*(k-1), &
+    !                  Chi0_ph(idx), Chi0_pp(idx) 
+    !          end do
+    !          write(1, *)
+    !       end do
+    !    end do
+    !    close(1)
+    ! end if
 
   end subroutine pa_Gkw_Chi0
 

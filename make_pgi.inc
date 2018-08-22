@@ -1,6 +1,6 @@
 FC          = mpifort
 FC_FLAGS    = -traceback -Mbounds
-DIR         = /mnt/nvmebeegfs/gpu_hackathon/hteam4/victory
+DIR         = /home/richard/OpenACC_Hackathon/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread 
 MODPATH     = -I$(DIR)/src/SRC_MOD

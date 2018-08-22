@@ -1,5 +1,5 @@
 
-include ../../make_pgi.inc
+include ../../make.inc
 
 .suffixes : .mod .o .f90
 

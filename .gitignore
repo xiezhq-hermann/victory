@@ -10,3 +10,9 @@ bin/
 *.dat
 
 out/
+
+lib/dfftpack/Makefile
+
+make_pgi\.inc
+
+Makefile

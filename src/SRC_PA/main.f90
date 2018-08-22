@@ -41,10 +41,10 @@ program main
      if (id == master) write(*, "(a, f12.6)") '  time spent on pa_Gkw_Chi0 is:', t2-t1 
      
      ! determine reducible vertex function and its kernel approximation
-        call reducible_vertex(ite)
-        t2_1 = MPI_WTIME()
-        if (id == master) write(*, "(a, f12.6)") '  time spent on reducible_vertex is:', t2_1-t2
-        call get_kernel_function(ite)
+     call reducible_vertex(ite)
+     t2_1 = MPI_WTIME()
+     if (id == master) write(*, "(a, f12.6)") '  time spent on reducible_vertex is:', t2_1-t2
+     call get_kernel_function(ite)
      t3 = MPI_WTIME()
      if (id == master) write(*, "(a, f12.6)") '  time spent on kernel calculation is:', t3-t2_1
 
