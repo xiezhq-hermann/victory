@@ -88,7 +88,7 @@ module parquet_util
      integer :: iw
   end type indxmap
 
-  type(indxmap), allocatable :: Index_fermionic(:), Index_bosonic(:)
+  type(indxmap), managed, allocatable :: Index_fermionic(:), Index_bosonic(:)
 
 contains
   !------------------------------------------------------------------------------
@@ -291,6 +291,25 @@ contains
     end if
 
   end function list_index
+
+  !------------------------------------------------------------------------------
+  attributes(device) integer function list_index_Bo(P, Ny, Nf) result(idx)
+     
+    integer, value :: Ny, Nf
+    type(Indxmap), intent(in) :: P
+
+    idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
+
+  end function list_index_Bo
+
+  attributes(device) integer function list_index_Fe(P, Ny, Nf) result(idx)
+     
+  integer, value :: Ny, Nf
+  type(Indxmap), intent(in) :: P
+
+    idx =((P%ix-1)*Ny+P%iy-1)*Nf+P%iw
+
+  end function list_index_Fe
 
   !------------------------------------------------------------------------------
   subroutine index_operation(idx1, idx2, operation, final_Indx)
