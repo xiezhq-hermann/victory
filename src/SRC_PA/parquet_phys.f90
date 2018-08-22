@@ -44,15 +44,15 @@ contains
              do j = 1, Nt
                 select case (iChannel)
                 case(1,2)
-                   call index_operation(index_fermionic(j), Comidx1, FaddB, ComIdx2)
+                   call index_operation_FaddB(index_fermionic(j), Comidx1, ComIdx2)
                    if (ComIdx2%iw > Nf .or. Comidx2%iw < 1) then
                       dummy = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1)+One) + mu - Ek(ComIdx2%ix, ComIdx2%iy))
                    else
                       dummy = Gkw(list_index(ComIdx2, Fermionic))
                    end if
                 case (3,4)
-                   call index_operation(Index_fermionic(j), Index_fermionic(j), MinusF, ComIdx2)    !  -k
-                   call index_operation(ComIdx2, ComIdx1, FaddB, ComIdx3)                ! q-k
+                   call index_operation_MinusF(Index_fermionic(j), Index_fermionic(j), ComIdx2)    !  -k
+                   call index_operation_FaddB(ComIdx2, ComIdx1, ComIdx3)                ! q-k
                    if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                       ! use the non-interacting green's function when q-k is outside the box
                       dummy = One/( xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )

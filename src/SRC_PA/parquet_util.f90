@@ -331,7 +331,7 @@ contains
 
     final_indx = indxmap(i, j, k)
     
-  end subroutine index_operation
+  end subroutine index_operation_FaddF
 
   subroutine index_operation_MinusF(idx1, idx2, final_Indx)
     type(Indxmap), intent(in)     :: idx1, idx2

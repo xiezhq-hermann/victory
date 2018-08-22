@@ -132,7 +132,7 @@ contains
           dummy = Zero
 
           map_i = index_fermionic(i)
-          call index_operation(map_i, map_i, MinusF, ComIdx1)
+          call index_operation_MinusF(map_i, map_i, ComIdx1)
           ! variable k'
 
           do j = 1, Nt
@@ -144,13 +144,13 @@ contains
              do k = 1, Nb
             map_k = index_bosonic(id*Nb+k)
 
-            call index_operation(map_i, map_k, FaddB, ComIdx2) ! k+q
+            call index_operation_FaddB(map_i, map_k, ComIdx2) ! k+q
                 if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                    dummy1 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                 else
                    dummy1 = Gkw(list_index(ComIdx2, Fermionic))
                 end if
-                call index_operation(map_j, map_k, FaddB, ComIdx3) ! k'+q
+                call index_operation_FaddB(map_j, map_k, ComIdx3) ! k'+q
                 if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                    dummy2 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                 else
@@ -163,8 +163,8 @@ contains
                    ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q) 
                    
                    ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(k'+q)^* x G(k-q) x G(k')^* ] 
-                   call index_operation(ComIdx1, map_k, FaddB, ComIdx4)  ! -k+q
-                   call index_operation(ComIdx4, ComIdx4, MinusF, ComIdx5) ! k-q
+                   call index_operation_FaddB(ComIdx1, map_k, ComIdx4)  ! -k+q
+                   call index_operation_MinusF(ComIdx4, ComIdx4, ComIdx5) ! k-q
                    if (ComIdx5%iw > Nf .or. ComIdx5%iw < 1) then
                       dummy1 = One/(xi*Pi/beta*(Two*(ComIdx5%iw-Nf/2-1) + One) + mu - Ek(ComIdx5%ix, ComIdx5%iy) )
                    else
@@ -189,7 +189,7 @@ contains
     do i = 1, Nt
        dummy = 0.d0
        map_i=index_fermionic(i)
-       call index_operation(map_i, map_i, MinusF, ComIdx1)
+       call index_operation_MinusF(map_i, map_i, ComIdx1)
        do jx = 1, Nx
           do jy = 1, Ny
              do jw = -Nf+1, 2*Nf
@@ -203,7 +203,7 @@ contains
                 do k = 1, Nb
                     map_k= index_bosonic(id*Nb+k)
                     ! Gkw(k'+q)
-                   call index_operation(ComIdx_j, map_k, FaddB, ComIdx2) ! k'+q
+                   call index_operation_FaddB(ComIdx_j, map_k, ComIdx2) ! k'+q
 
                    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                       dummy2 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
@@ -212,7 +212,7 @@ contains
                    end if
 
                    ! Gkw(k+q)
-                   call index_operation(map_i, map_k, FaddB, ComIdx3) ! k+q
+                   call index_operation_FaddB(map_i, map_k, ComIdx3) ! k+q
 
                    if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                       dummy3 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
@@ -228,8 +228,8 @@ contains
                    
                    ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(k'+q)^* x G(k-q) x G(k')^* ] 
                                       
-                    call index_operation(ComIdx1, map_k, FaddB, ComIdx3)  ! -k+q
-                    call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! k-q               
+                    call index_operation_FaddB(ComIdx1, map_k, ComIdx3)  ! -k+q
+                    call index_operation_MinusF(ComIdx3, ComIdx3, ComIdx4) ! k-q               
                    
                                       
                    if ( map_k%iw > 1) then
@@ -250,8 +250,8 @@ contains
                  ! The contributions of s and t kernels have shifted variables: k+k'+q -> q, k+q -> q-k', k'+q -> q-k   
   
                  ! Gkw(q-k')
-                    call index_operation(ComIdx_j, ComIdx_j, MinusF, ComIdx5) ! -k'
-                    call index_operation(ComIdx5, index_bosonic(id*Nb+k), FaddB, ComIdx2) ! -k'+q
+                    call index_operation_MinusF(ComIdx_j, ComIdx_j, ComIdx5) ! -k'
+                    call index_operation_FaddB(ComIdx5, index_bosonic(id*Nb+k), ComIdx2) ! -k'+q
                    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                       dummy2 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                    else

@@ -39,7 +39,7 @@ contains
        ! --- density (d) and magnetic (m) channels ---
        !  Phi = Gamma *G*G* F
        do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_bosonic(idx), FaddB, ComIdx1) ! k+q
+          call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1) ! k+q
           idx1 = list_index(ComIdx1, Fermionic)
           
           if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
@@ -60,7 +60,7 @@ contains
 
        ! Phi = F *G*G* Gamma
        do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_bosonic(idx), FaddB, ComIdx1) ! k+q
+          call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1) ! k+q
           idx1 = list_index(ComIdx1, Fermionic)
 
           if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
@@ -97,8 +97,8 @@ contains
 
        ! Psi = Gamma *G*G* F
        do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_fermionic(i), MinusF, ComIdx1)    !  -k
-          call index_operation(ComIdx1, Index_bosonic(idx), FaddB, ComIdx2)                ! q-k
+          call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1)    !  -k
+          call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2)                ! q-k
           idx1 = list_index(ComIdx2, Fermionic)
           if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
              ! use the non-interacting green's function when q-k is outside the box
@@ -118,8 +118,8 @@ contains
 
        ! Psi = F *G*G* Gamma
        do i = 1, Nt
-          call index_operation(Index_fermionic(i), Index_fermionic(i), MinusF, ComIdx1)    !  -k
-          call index_operation(ComIdx1, Index_bosonic(idx), FaddB, ComIdx2)                ! q-k
+          call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1)    !  -k
+          call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2)                ! q-k
           idx1 = list_index(ComIdx2, Fermionic)
           if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
              ! use the non-interacting green's function when q-k is outside the box
@@ -327,9 +327,9 @@ contains
        k2_ = k2
         q_ = q
     else
-       call index_operation(k1, k1, MinusF, K1_)
-       call index_operation(k2, k2, MinusF, K2_)
-       call index_operation(q, q, MinusB, q_)
+       call index_operation_MinusF(k1, k1, K1_)
+       call index_operation_MinusF(k2, k2, K2_)
+       call index_operation_MinusB(q, q, q_)
     end if
 
     ic = (k1_%ix-1)*Ny+k1_%iy
@@ -360,7 +360,7 @@ contains
           if (jw > Nf .or. jw < 1) then
              kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic))
           else
-             Kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_d2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - ba  ckground
+             Kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_d2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
           end if
        end if       
     case (CHANNEL_M)
