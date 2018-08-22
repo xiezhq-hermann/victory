@@ -3,6 +3,7 @@ module parquet_util
   use mpi_mod
   use global_parameter
   use math_mod
+  use cudafor
 
   implicit none
 
@@ -37,7 +38,7 @@ module parquet_util
 
   complex,     allocatable :: Sigma_H(:, :)  ! Hatree energy
 
-  real(dp),    allocatable :: Ek(:, :)       ! tight-binding dispersion
+  real(dp), managed, allocatable :: Ek(:, :)       ! tight-binding dispersion
   
   complex(dp), allocatable :: Delta(:)       ! DMFT hybridization function
   
@@ -48,23 +49,23 @@ module parquet_util
   complex(dp), allocatable :: L_t(:, :, :)   !  ... in the triplet channel
   
   ! complete vertex in each channel
-  complex(dp), allocatable :: F_d(:, :, :)     ! density channel
-  complex(dp), allocatable :: F_m(:, :, :)     ! magnetic channel
-  complex(dp), allocatable :: F_s(:, :, :)     ! singlet channel
-  complex(dp), allocatable :: F_t(:, :, :)     ! triplet channel
+  complex(dp), managed, allocatable :: F_d(:, :, :)     ! density channel
+  complex(dp), managed, allocatable :: F_m(:, :, :)     ! magnetic channel
+  complex(dp), managed, allocatable :: F_s(:, :, :)     ! singlet channel
+  complex(dp), managed, allocatable :: F_t(:, :, :)     ! triplet channel
 
   ! irreducible vertex in each channel 
-  complex(dp), allocatable :: G_d(:, :, :)     ! density channel
-  complex(dp), allocatable :: G_m(:, :, :)     ! magnetic channel
-  complex(dp), allocatable :: G_s(:, :, :)     ! singlet channel
-  complex(dp), allocatable :: G_t(:, :, :)     ! triplet channel
+  complex(dp), managed, allocatable :: G_d(:, :, :)     ! density channel
+  complex(dp), managed, allocatable :: G_m(:, :, :)     ! magnetic channel
+  complex(dp), managed, allocatable :: G_s(:, :, :)     ! singlet channel
+  complex(dp), managed, allocatable :: G_t(:, :, :)     ! triplet channel
 
   ! single-particle property
-  complex(dp), allocatable :: Gkw(:)           ! Green's function
+  complex(dp), managed, allocatable :: Gkw(:)           ! Green's function
   complex(dp), allocatable :: Sigma(:)         ! Self-energy
 
-  complex(dp), allocatable :: chi0_ph(:)       ! bubble diagram in p-h channel
-  complex(dp), allocatable :: chi0_pp(:)       ! bubble diagram in p-p channel
+  complex(dp), managed, allocatable :: chi0_ph(:)       ! bubble diagram in p-h channel
+  complex(dp), managed, allocatable :: chi0_pp(:)       ! bubble diagram in p-p channel
 
   complex(dp), allocatable :: k2_d1(:,:,:)     ! kernel approximation of Phi_d
   complex(dp), allocatable :: k2_m1(:,:,:)     ! kernel approximation of Phi_m
