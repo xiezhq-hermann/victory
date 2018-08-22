@@ -356,9 +356,9 @@ contains
 
   end subroutine index_operation_FaddB
 
-  attributes(device) subroutine index_operation_FaddF(idx1, idx2, final_Indx, Nx, Ny)
+  attributes(device) subroutine index_operation_FaddF(idx1, idx2, final_Indx, Nx, Ny, Nf)
 
-    integer, value :: Nx, Ny
+    integer, value :: Nx, Ny, Nf
     type(Indxmap), intent(in)     :: idx1, idx2
     type(Indxmap), intent(out)    :: final_Indx
 
@@ -375,9 +375,9 @@ contains
     
   end subroutine index_operation_FaddF
 
-  attributes(device) subroutine index_operation_MinusF(idx1, idx2, final_Indx, Nx, Ny)
+  attributes(device) subroutine index_operation_MinusF(idx1, idx2, final_Indx, Nx, Ny, Nf)
 
-    integer, value :: Nx, Ny
+    integer, value :: Nx, Ny, Nf
     type(Indxmap), intent(in)     :: idx1, idx2
     type(Indxmap), intent(out)    :: final_Indx
 

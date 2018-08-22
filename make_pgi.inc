@@ -1,5 +1,5 @@
 FC          = mpifort
-FC_FLAGS    = -traceback -Mbounds
+FC_FLAGS    = -traceback -Mbounds -Mcuda=rdc
 DIR         = /mnt/nvmebeegfs/gpu_hackathon/hteam4/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread 
