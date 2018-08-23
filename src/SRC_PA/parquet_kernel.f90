@@ -73,8 +73,8 @@ contains
   end subroutine reduc_kernel1
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel2_0(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1)
-    integer, value :: k, idx
+  attributes(global) subroutine reduc_kernel2_0(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1, Nt)
+    integer, value :: k, idx, Nt
     real(dp), value :: One, xU, f_damping
     complex(dp), value :: G1
     complex(dp) :: chi0_ph(:), G_d(:, :, :), G_m(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :)
@@ -83,14 +83,18 @@ contains
     i = (blockIdx%x-1)*blockDim%x + threadIdx%x
     j = (blockIdx%y-1)*blockDim%y + threadIdx%y
 
+    if (i > Nt .OR. j > Nt) then
+      return
+    end if
+
     G_d(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
     G_m(i, j, k) = (One-f_damping)*(xU*Chi0_ph(idx)*xU) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
   
   end subroutine reduc_kernel2_0
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel2_1(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1, F_d, F_m)
-    integer, value :: k, idx
+  attributes(global) subroutine reduc_kernel2_1(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1, F_d, F_m, Nt)
+    integer, value :: k, idx, Nt
     real(dp), value :: One, xU, f_damping
     complex(dp), value :: G1
     complex(dp) :: chi0_ph(:), G_d(:, :, :), G_m(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :), F_d(:, :, :), F_m(:, :, :)
@@ -98,6 +102,10 @@ contains
     integer :: i,j
     i = (blockIdx%x-1)*blockDim%x + threadIdx%x
     j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+
+    if (i > Nt .OR. j > Nt) then
+      return
+    end if
 
     G_d(i, j, k) = (One-f_damping)*(F_d(i, j, k)-G_d(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + xU*Chi0_ph(idx)*xU)
     G_m(i, j, k) = (One-f_damping)*(F_m(i, j, k)-G_m(i, j, k)) + f_damping*(dummy3D_4(i, j) - G1 + xU*Chi0_ph(idx)*xU)
@@ -115,6 +123,10 @@ contains
     
     integer :: i, j
     i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+
+    if (i > Nt) then
+      return
+    end if
 
     call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1, Nx, Ny, Nf)
     call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2, Nx, Ny)
@@ -144,6 +156,9 @@ contains
 
     integer :: i, j
     i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    if (i>Nt) then
+      return
+    end if
 
     call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1, Nx, Ny, Nf)
     call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2, Nx, Ny)
@@ -161,8 +176,8 @@ contains
 end subroutine reduc_kernel4
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel5_0(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1)
-    integer, value :: k, idx
+  attributes(global) subroutine reduc_kernel5_0(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1, Nt)
+    integer, value :: k, idx, Nt
     real(dp), value :: One, xU, f_damping, Two
     complex(dp), value :: G1
     complex(dp) :: Chi0_pp(:), G_s(:, :, :), G_t(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :)
@@ -170,6 +185,9 @@ end subroutine reduc_kernel4
     integer :: i,j
     i = (blockIdx%x-1)*blockDim%x + threadIdx%x
     j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+    if (i>Nt .OR. j>Nt) then
+      return
+    end if
 
     G_s(i, j, k) = (One-f_damping)*(Two*xU*Chi0_pp(idx)*Two*xU) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
     G_t(i, j, k) = f_damping*dummy3D_4(i, j)
@@ -177,8 +195,8 @@ end subroutine reduc_kernel4
   end subroutine reduc_kernel5_0
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel5_1(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1, F_s, F_t)
-    integer, value :: k, idx
+  attributes(global) subroutine reduc_kernel5_1(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1, F_s, F_t, Nt)
+    integer, value :: k, idx, Nt
     real(dp), value :: One, xU, f_damping, Two
     complex(dp), value :: G1
     complex(dp) :: Chi0_pp(:), G_s(:, :, :), G_t(:, :, :), dummy3D_3(:, :), dummy3D_4(:, :), F_s(:, :, :), F_t(:, :, :)
@@ -186,6 +204,9 @@ end subroutine reduc_kernel4
     integer :: i,j
     i = (blockIdx%x-1)*blockDim%x + threadIdx%x
     j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+    if (i > Nt .OR. j>Nt) then
+      return
+    end if
 
     G_s(i, j, k) = (One-f_damping)*(F_s(i, j, k)-G_s(i, j, k)) + f_damping*(dummy3D_3(i, j) - G1 + (Two*xU)*Chi0_pp(idx)*(Two*xU))
     G_t(i, j, k) = (One-f_damping)*(F_t(i, j, k)-G_t(i, j, k)) + f_damping*dummy3D_4(i, j)
@@ -255,7 +276,7 @@ end subroutine reduc_kernel4
 
     character(len=30) :: FLE, str
     
-    complex(dp), managed, allocatable :: dummy3D_1(:, :), dummy3D_2(:, :), dummy3D_3(:, :), dummy3D_4(:, :), Gd_slice(:, :), Gm_slice(:, :), Gs_slice(:, :), Gt_slice(:, :)
+    complex(dp), device, allocatable :: dummy3D_1(:, :), dummy3D_2(:, :), dummy3D_3(:, :), dummy3D_4(:, :), Gd_slice(:, :), Gm_slice(:, :), Gs_slice(:, :), Gt_slice(:, :)
     type(Indxmap), device :: ComIdx1, ComIdx2
     type(dim3) :: grid, tBlock
 
@@ -302,24 +323,26 @@ end subroutine reduc_kernel4
        !  Phi = Gamma *G*G* F
        call reduc_kernel0<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
 
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gd_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gm_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gd_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gm_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gd_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gm_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gd_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gm_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
 
        call reduc_kernel1<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
 
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gd_slice, Nt, One_c, dummy3D_3, Nt)
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gm_slice, Nt, One_c, dummy3D_4, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gd_slice, Nt, One_c, dummy3D_3, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gm_slice, Nt, One_c, dummy3D_4, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gd_slice, Nt, One_c, dummy3D_3, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gm_slice, Nt, One_c, dummy3D_4, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gd_slice, Nt, One_c, dummy3D_3, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gm_slice, Nt, One_c, dummy3D_4, Nt)
+
+       istat =  cudaDeviceSynchronize()
 
       G1_sum = sum(G1(1:Nt))
 
       if (ite == 1) then
-        call reduc_kernel2_0<<<grid, tBlock>>>(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1_sum)
+        call reduc_kernel2_0<<<grid, tBlock>>>(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1_sum, Nt)
       else
-        call reduc_kernel2_1<<<grid, tBlock>>>(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1_sum, F_d, F_m)
+        call reduc_kernel2_1<<<grid, tBlock>>>(G_d, G_m, k, idx, One, f_damping, xU, Chi0_ph, dummy3D_3, dummy3D_4, G1_sum, F_d, F_m, Nt)
       end if
     
        ! --- singlet (s) and triplet (t) channel --- 
@@ -333,49 +356,58 @@ end subroutine reduc_kernel4
       ! G1 = G1_copy
       ! dummy3D_3 = dummy3D_copy
       ! dummy3D_4 = dummy3D_copy
-      call memSet1D<<<(Nt+31)/32, 32>>>(G1, Zero_c)
-      call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c)
-      call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c)
+      call memSet1D<<<(Nt+31)/32, 32>>>(G1, Zero_c, Nt)
+      call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c, Nt)
+      call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c, Nt)
 
       call reduc_kernel3<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
 
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gs_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gt_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gs_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gt_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gs_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gt_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gs_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gt_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
 
       call reduc_kernel4<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
 
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gs_slice, Nt, One_c, dummy3D_3, Nt)
-       call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gt_slice, Nt, One_c, dummy3D_4, Nt)       
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gs_slice, Nt, One_c, dummy3D_3, Nt)
-      !  call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gt_slice, Nt, One_c, dummy3D_4, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gs_slice, Nt, One_c, dummy3D_3, Nt)
+      !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gt_slice, Nt, One_c, dummy3D_4, Nt)       
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gs_slice, Nt, One_c, dummy3D_3, Nt)
+       call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gt_slice, Nt, One_c, dummy3D_4, Nt)
+
+       istat =  cudaDeviceSynchronize()
+
+      G1_sum = sum(G1(1:Nt))
 
       if (ite == 1) then
-        call reduc_kernel5_0<<<grid, tBlock>>>(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1_sum)
+        call reduc_kernel5_0<<<grid, tBlock>>>(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1_sum, Nt)
       else
-        call reduc_kernel5_1<<<grid, tBlock>>>(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1_sum, F_s, F_t)
+        call reduc_kernel5_1<<<grid, tBlock>>>(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1_sum, F_s, F_t, Nt)
       end if       
     end do
 
-    write(str, '(I0.3,a,I0.3)') ite, '-', id
-    if (Nc <= 2) then
-       FLE = 'Reducible_V-'//trim(str)
-       open(unit=1, file=FLE, status='unknown')
-       do i = 1, Nt
-          do j = 1, Nt
-             do k = 1, Nb
-                write(1, '(3i5, 8f20.12)') i, j, k, G_d(i, j, k), G_m(i, j, k), G_s(i, j, k), G_t(i, j, k)
-             end do
-          end do
-       end do
-    end if
-    close(1)
+    ! write(str, '(I0.3,a,I0.3)') ite, '-', id
+    ! if (Nc <= 2) then
+    !    FLE = 'Reducible_V-'//trim(str)
+    !    open(unit=1, file=FLE, status='unknown')
+    !    do i = 1, Nt
+    !       do j = 1, Nt
+    !          do k = 1, Nb
+    !             write(1, '(3i5, 8f20.12)') i, j, k, G_d(i, j, k), G_m(i, j, k), G_s(i, j, k), G_t(i, j, k)
+    !          end do
+    !       end do
+    !    end do
+    ! end if
+    ! close(1)
 
     if (allocated(dummy3D_1)) deallocate(dummy3D_1)
     if (allocated(dummy3D_2)) deallocate(dummy3D_2)
     if (allocated(dummy3D_3)) deallocate(dummy3D_3)
     if (allocated(dummy3D_4)) deallocate(dummy3D_4)
+    if (allocated(G1)) deallocate(G1)
+    if (allocated(Gd_slice)) deallocate(Gd_slice)
+    if (allocated(Gm_slice)) deallocate(Gm_slice)
+    if (allocated(Gs_slice)) deallocate(Gs_slice)
+    if (allocated(Gt_slice)) deallocate(Gt_slice)
 
     !!! G_d, G_m, G_s, G_t are now updated, which temporarily store the reducible vertex functions.
        
