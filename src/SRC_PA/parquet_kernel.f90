@@ -185,6 +185,29 @@ end subroutine reduc_kernel4
 
   end subroutine reduc_kernel5_1
   
+  attributes(global) subroutine memSet1D(G, v)
+
+    complex(dp), value :: v
+    complex(dp) :: G(:)
+
+    integer :: i
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    G(i) = v
+
+  end subroutine memSet1D
+
+  attributes(global) subroutine memSet2D(G, v)
+
+    complex(dp), value :: v
+    complex(dp) :: G(:,:)
+    
+    integer :: i,j
+    i = (blockIdx%x-1)*blockDim%x + threadIdx%x
+    j = (blockIdx%y-1)*blockDim%y + threadIdx%y
+
+    G(i,j) = v
+  
+  end subroutine memSet2D
   !-------------------------------------------------------------------------------------------
   subroutine reducible_vertex(ite)
      
@@ -200,7 +223,7 @@ end subroutine reduc_kernel4
 
     character(len=30) :: FLE, str
     
-    complex(dp), device, allocatable :: G1_copy(:), dummy3D_copy(:,:), dummy3D_1(:, :), dummy3D_2(:, :), dummy3D_3(:, :), dummy3D_4(:, :)
+    complex(dp), device, allocatable :: dummy3D_1(:, :), dummy3D_2(:, :), dummy3D_3(:, :), dummy3D_4(:, :)
     type(Indxmap), device :: ComIdx1, ComIdx2
     type(dim3) :: grid, tBlock
 
@@ -212,11 +235,11 @@ end subroutine reduc_kernel4
     if (.NOT. allocated(dummy3D_2)) allocate(dummy3D_2(Nt, Nt))
     if (.NOT. allocated(dummy3D_3)) allocate(dummy3D_3(Nt, Nt))
     if (.NOT. allocated(dummy3D_4)) allocate(dummy3D_4(Nt, Nt))
-    if (.Not. allocated(G1_copy)) allocate(G1_copy(Nt))
-    if (.Not. allocated(dummy3D_copy)) allocate(dummy3D_copy(Nt, Nt))
+    ! if (.Not. allocated(G1_copy)) allocate(G1_copy(Nt))
+    ! if (.Not. allocated(dummy3D_copy)) allocate(dummy3D_copy(Nt, Nt))
 
-    G1_copy = Zero_c
-    dummy3D_copy = Zero_c
+    ! G1_copy = Zero_c
+    ! dummy3D_copy = Zero_c
 
     do k = 1, Nb
        idx = id*Nb + k
@@ -227,9 +250,12 @@ end subroutine reduc_kernel4
       !  cudaMemcpy(G1, G1_copy, Nt*16, cudaMemcpyDeviceToDevice)
       !  cudaMemcpy(dummy3D_3, dummy3D_copy, Nt*Nt*16, cudaMemcpyDeviceToDevice)
       !  cudaMemcpy(dummy3D_4, dummy3D_copy, Nt*Nt*16, cudaMemcpyDeviceToDevice)
-       G1 = G1_copy
-       dummy3D_3 = dummy3D_copy
-       dummy3D_4 = dummy3D_copy
+      !  G1 = G1_copy
+      !  dummy3D_3 = dummy3D_copy
+      !  dummy3D_4 = dummy3D_copy
+       call memSet1D<<<(Nt+31)/32, 32>>>(G1, Zero_c)
+       call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c)
+       call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c)
 
        ! --- density (d) and magnetic (m) channels ---
        !  Phi = Gamma *G*G* F
@@ -263,9 +289,13 @@ end subroutine reduc_kernel4
       ! cudaMemcpy(G1, G1_copy, Nt*16, cudaMemcpyDeviceToDevice)
       ! cudaMemcpy(dummy3D_3, dummy3D_copy, Nt*Nt*16, cudaMemcpyDeviceToDevice)
       ! cudaMemcpy(dummy3D_4, dummy3D_copy, Nt*Nt*16, cudaMemcpyDeviceToDevice)
-      G1 = G1_copy
-      dummy3D_3 = dummy3D_copy
-      dummy3D_4 = dummy3D_copy
+      ! G1 = G1_copy
+      ! dummy3D_3 = dummy3D_copy
+      ! dummy3D_4 = dummy3D_copy
+      call memSet1D<<<(Nt+31)/32, 32>>>(G1, Zero_c)
+      call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c)
+      call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c)
+
       call reduc_kernel3<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
 
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, G_s(1:Nt, 1:Nt, k), Nt, dummy3D_1(1:Nt, 1:Nt), Nt, Zero_c, dummy3D_3, Nt)

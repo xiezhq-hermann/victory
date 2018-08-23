@@ -1,6 +1,6 @@
 FC          = mpifort
-FC_FLAGS    = -traceback -Mbounds -Mcuda=rdc
-DIR         = /mnt/nvmebeegfs/gpu_hackathon/hteam4/victory
+FC_FLAGS    = -traceback -Mbounds -Mcuda=rdc -Mcuda=cc70
+DIR         = /mnt/nvmebeegfs/gpu_hackathon/hteam4/xiezhq/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread 
 MODPATH     = -I$(DIR)/src/SRC_MOD
@@ -13,7 +13,7 @@ LIB = $(LLIB) $(FLIB)
 #  Archiver and its flags
 #
 
-ARCH   = ar
+ARCH   = ar 
 ARFLAG = cr
 RANLIB = ranlib
 
