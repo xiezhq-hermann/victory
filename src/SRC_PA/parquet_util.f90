@@ -126,7 +126,7 @@ contains
     real(dp)  :: t1, t2, t3, t4, dkx, dky, kx, ky
     
     open(unit=1, file='input.parquet', status='old')
-    read(1, *) Nx, Ny, nOmega, beta, xU, nParticle, f_damping     
+    read(1, *) Nx, Ny, nOmega, beta, xU, nParticle, f_damping
     read(1, *) DGA                              ! if the local fully irreducible
                                                 ! vertex from DMFT is used or
                                                 ! not.
