@@ -192,8 +192,9 @@ end subroutine reduc_kernel4
 
   end subroutine reduc_kernel5_1
   
-  attributes(global) subroutine memSet1D(G, v)
+  attributes(global) subroutine memSet1D(G, v, Nt)
 
+    integer, value :: Nt
     complex(dp), value :: v
     complex(dp) :: G(:)
 
@@ -207,8 +208,9 @@ end subroutine reduc_kernel4
 
   end subroutine memSet1D
 
-  attributes(global) subroutine memSet2D(G, v)
+  attributes(global) subroutine memSet2D(G, v, Nt)
 
+    integer, value :: Nt
     complex(dp), value :: v
     complex(dp) :: G(:,:)
     
@@ -287,9 +289,9 @@ end subroutine reduc_kernel4
       !  G1 = G1_copy
       !  dummy3D_3 = dummy3D_copy
       !  dummy3D_4 = dummy3D_copy
-       call memSet1D<<<(Nt+31)/32, 32>>>(G1, Zero_c)
-       call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c)
-       call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c)
+       call memSet1D<<<(Nt+31)/32, 32>>>(G1, Zero_c, Nt)
+       call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c, Nt)
+       call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c, Nt)
 
        call memCpySlice<<<grid, tBlock>>>(Gd_slice, G_d, k, Nt)
        call memCpySlice<<<grid, tBlock>>>(Gm_slice, G_m, k, Nt)
