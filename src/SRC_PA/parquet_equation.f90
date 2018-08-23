@@ -64,6 +64,8 @@ contains
 !
 !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1) 
 !
+      mat = G_d
+
       do i = 1, Nt      ! k
         i1 = i         ! k1 = k
         do k1 = 1, Nb  ! q1
@@ -209,6 +211,8 @@ contains
     !  
     !  rotation 1: Phi(k, k+q; k'-k) -> Phi(k1, k1'; q1) 
     !
+    mat = G_m
+
     do i = 1, Nt      ! k
         i1 = i         ! k1 = k
         do k1 = 1, Nb  ! q1
@@ -351,6 +355,7 @@ contains
     !------------------------------------------------------------------------------------------------------------------------------
     ! ichannel = 3
     !
+    mat = G_s 
     do i = 1, Nt   ! k
         do k = 1, Nb   ! q
             call index_operation_FaddB(index_fermionic(i), index_bosonic(id*Nb+k), ComIdx1)  ! k+q
@@ -390,6 +395,7 @@ contains
     !------------------------------------------------------------------------------------------------------------------------------
     ! ichannel = 4
     !
+    mat = G_t
     do i = 1, Nt   ! k
         do k = 1, Nb   ! q
             call index_operation_FaddB(index_fermionic(i), index_bosonic(id*Nb+k), ComIdx1)  ! k+q
