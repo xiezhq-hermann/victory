@@ -1,5 +1,5 @@
 FC          = mpifort
-FC_FLAGS    = -fast -Mbounds
+FC_FLAGS    = -g -O0 -Mbounds
 DIR         = /home/richard/OpenACC_Hackathon/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread 

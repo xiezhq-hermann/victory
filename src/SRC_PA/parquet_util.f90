@@ -275,7 +275,7 @@ contains
    end subroutine readin
 
   !------------------------------------------------------------------------------
-  integer function list_index_Fermionic(P, typ) result(idx)
+  integer function list_index_Fermionic(P) result(idx)
      
     type(Indxmap), intent(in) :: P
 
@@ -306,8 +306,10 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = idx1%ix + idx2%ix - 1 + (i > Nx) * Nx
-    j = idx1%iy + idx2%iy - 1 + (i > Ny) * Ny
+    i = idx1%ix + idx2%ix - 1
+    i = i + (i > Nx) * Nx
+    j = idx1%iy + idx2%iy - 1
+    j = j + (j > Ny) * Ny
     k = idx1%iw + idx2%iw - 1
     
     final_indx = indxmap(i, j, k)
@@ -321,8 +323,10 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = idx1%ix + idx2%ix - 1 + (i > Nx) * Nx
-    j = idx1%iy + idx2%iy - 1 + (i > Ny) * Ny
+    i = idx1%ix + idx2%ix - 1
+    i = i + (i > Nx) * Nx
+    j = idx1%iy + idx2%iy - 1
+    j = j + (j > Ny) * Ny
     k = idx1%iw + idx2%iw - Nf 
 
     final_indx = indxmap(i, j, k)
@@ -336,8 +340,10 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = -idx1%ix + Nx + 2 + (i > Nx) * Nx
-    j = -idx1%iy + Ny + 2 + (i > Ny) * Ny
+    i = -idx1%ix + Nx + 2
+    i = i + (i > Nx) * Nx
+    j = -idx1%iy + Ny + 2
+    j = j + (j > Ny) * Ny
     k = -idx1%iw + Nf + 1
 
     final_indx = indxmap(i, j, k)
@@ -351,8 +357,10 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = -idx1%ix + Nx + 2 + (i > Nx) * Nx
-    j = -idx1%iy + Ny + 2 + (i > Ny) * Ny
+    i = -idx1%ix + Nx + 2
+    i = i + (i > Nx) * Nx
+    j = -idx1%iy + Ny + 2
+    j = j + (j > Ny) * Ny
     k = -idx1%iw + 2
 
     final_indx = indxmap(i, j, k)

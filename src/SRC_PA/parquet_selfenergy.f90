@@ -221,7 +221,7 @@ contains
                    end if
                    
                    dummy = dummy - dummy1*dummy2*dummy3*( &
-                   kernel(CHANNEL_D, map_i, ComIdx_j,map_k) - 3.0d0*kernel(CHANNEL_M, map_i, ComIdx_j, map_k))
+                   Kernel_CHANNEL_D(map_i, ComIdx_j,map_k) - 3.0d0*Kernel_CHANNEL_M(map_i, ComIdx_j, map_k))
                                      
                 
                    ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q) 
@@ -243,7 +243,7 @@ contains
                       
                       
                       dummy = dummy - conjg(dummy1)*conjg(dummy2)*dummy4*conjg(&
-                      kernel(CHANNEL_D, ComIdx1, ComIdx_j,map_k) - 3.0d0*kernel(CHANNEL_M, ComIdx1, ComIdx_j,map_k))
+                      Kernel_CHANNEL_D(ComIdx1, ComIdx_j,map_k) - 3.0d0*Kernel_CHANNEL_M(ComIdx1, ComIdx_j,map_k))
            
                  end if
                  
@@ -267,7 +267,7 @@ contains
                    
                    
                     dummy = dummy - dummy1*dummy2*dummy4*( &
-                    kernel(CHANNEL_S, map_i, ComIdx_j, map_k) + kernel(CHANNEL_T, map_i, ComIdx_j,map_k))
+                    Kernel_CHANNEL_S(map_i, ComIdx_j, map_k) + Kernel_CHANNEL_T(map_i, ComIdx_j,map_k))
                  
                   if ( index_bosonic(id*Nb+k)%iw > 1) then
                                  
@@ -276,7 +276,7 @@ contains
                    !  -U x T^2/2/N^2 sum_k' sum_q conjg {[Fd(-k,k';q) - Fm(-k,k';q)] x G(q-k') x G(k+q) x G(k') }
                    
                     dummy = dummy - conjg(dummy1*dummy2*dummy3*( &
-                    kernel(CHANNEL_S,  ComIdx1, ComIdx_j, map_k) + kernel(CHANNEL_T, ComIdx1, ComIdx_j,map_k )))                
+                    Kernel_CHANNEL_S(ComIdx1, ComIdx_j, map_k) + Kernel_CHANNEL_T(ComIdx1, ComIdx_j,map_k )))                
                  
                   
                    end if

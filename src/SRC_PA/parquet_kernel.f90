@@ -40,8 +40,7 @@ contains
        !  Phi = Gamma *G*G* F
        do i = 1, Nt
           call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1) ! k+q
-          idx1 = list_index_Fermionic(ComIdx1)
-          
+          idx1 = list_index_Fermionic(ComIdx1)          
           if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
              ! use the non-interacting Green's function when k+q is outside of the box
              dummy = One/(xi*Pi/beta*(Two*(ComIdx1%iw-Nf/2-1) + One) + mu - Ek(ComIdx1%ix, ComIdx1%iy))
@@ -311,10 +310,9 @@ contains
   end subroutine get_kernel_function
  
   !-------------------------------------------------------------------------------------------------
-  complex(dp) function kernel_CHANNEL_M(k1, k2, q)
+  complex(dp) function kernel_CHANNEL_M(k1, k2, q) result(kernel)
     
     ! character(len=1), intent(in) :: channel
-    integer,          intent(in) :: channel
     type(Indxmap),    intent(in) :: k1, k2, q
   
     ! ... local vars ...
@@ -357,7 +355,7 @@ contains
         if (jw > Nf .or. jw < 1) then
           kernel = K2_d1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
         else
-          Kernel = K2_d1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_d2(ic, list_index(k2_), list_index(q_)) - background
+          Kernel = K2_d1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_)) + K2_d2(ic, list_index_Fermionic(k2_), list_index_Bosonic(q_)) - background
         end if
     end if      
 
@@ -365,10 +363,9 @@ contains
 
   end function kernel_CHANNEL_M 
 
-  complex(dp) function kernel_CHANNEL_D(k1, k2, q)
+  complex(dp) function kernel_CHANNEL_D(k1, k2, q)  result(kernel)
     
     ! character(len=1), intent(in) :: channel
-    integer, intent(in) :: channel
     type(Indxmap),    intent(in) :: k1, k2, q
   
     ! ... local vars ...
@@ -410,7 +407,7 @@ contains
       if (jw > Nf .or. jw < 1) then
         kernel = K2_m1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
       else
-        Kernel = K2_m1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_m2(ic, list_index(k2_), list_index(q_)) - background
+        Kernel = K2_m1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_)) + K2_m2(ic, list_index_Fermionic(k2_), list_index_Bosonic(q_)) - background
       end if
     end if
 
@@ -419,10 +416,9 @@ contains
   end function kernel_CHANNEL_D 
 
 
-  complex(dp) function kernel_CHANNEL_S(k1, k2, q)
+  complex(dp) function kernel_CHANNEL_S(k1, k2, q)  result(kernel)
     
     ! character(len=1), intent(in) :: channel
-    integer, intent(in) :: channel
     type(Indxmap),    intent(in) :: k1, k2, q
   
     ! ... local vars ...
@@ -464,19 +460,18 @@ contains
         if (jw > Nf .or. jw < 1) then
           kernel = K2_s1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
         else
-          Kernel = K2_s1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_s2(ic, list_index(k2_), list_index(q_)) - background
+          Kernel = K2_s1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_)) + K2_s2(ic, list_index_Fermionic(k2_), list_index_Bosonic(q_)) - background
         end if
     end if
 
-    if (q%iw < 1)  Kernel = conjg(Kernel)
+    if (q%iw < 1)  kernel = conjg(kernel)
 
   end function kernel_CHANNEL_S
 
 
-  complex(dp) function kernel_CHANNEL_T(k1, k2, q)
+  complex(dp) function kernel_CHANNEL_T(k1, k2, q) result(kernel)
     
     ! character(len=1), intent(in) :: channel
-    integer, intent(in) :: channel
     type(Indxmap),    intent(in) :: k1, k2, q
   
     ! ... local vars ...
@@ -518,11 +513,11 @@ contains
         if (jw > Nf .or. jw < 1) then
           kernel = K2_t1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
         else
-          Kernel = K2_t1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_t2(ic, list_index(k2_), list_index(q_)) - background
+          Kernel = K2_t1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_)) + K2_t2(ic, list_index_Fermionic(k2_), list_index_Bosonic(q_)) - background
         end if
     end if
      
-    if (q%iw < 1)  Kernel = conjg(Kernel)
+    if (q%iw < 1)  kernel = conjg(kernel)
 
   end function kernel_CHANNEL_T 
   
