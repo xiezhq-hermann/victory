@@ -275,22 +275,21 @@ contains
    end subroutine readin
 
   !------------------------------------------------------------------------------
-  integer function list_index(P, typ) result(idx)
+  integer function list_index_Fermionic(P, typ) result(idx)
      
     type(Indxmap), intent(in) :: P
-    ! character(len=30), intent(in) :: typ
-    integer, intent(in) :: typ
-    !$acc routine
-    if (typ == BOSONIC_) then
-       idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
-    elseif (typ == FERMIONIC_) then
-       idx =((P%ix-1)*Ny+P%iy-1)*Nf+P%iw
-    else
-       write(*, *) 'unknown Matsubara Frequency type!'
-       stop
-    end if
 
-  end function list_index
+    idx =((P%ix-1)*Ny+P%iy-1)*Nf+P%iw
+
+  end function list_index_Fermionic
+
+  integer function list_index_Bosonic(P) result(idx)
+     
+    type(Indxmap), intent(in) :: P
+
+    idx = ((P%ix-1)*Ny+P%iy-1)*Nf/2+P%iw
+
+  end function list_index_Bosonic
 
   !------------------------------------------------------------------------------
   !
@@ -307,10 +306,8 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = idx1%ix + idx2%ix - 1
-      if (i > Nx) i = i - Nx
-    j = idx1%iy + idx2%iy - 1
-      if (j > Ny) j = j - Ny
+    i = idx1%ix + idx2%ix - 1 + (i > Nx) * Nx
+    j = idx1%iy + idx2%iy - 1 + (i > Ny) * Ny
     k = idx1%iw + idx2%iw - 1
     
     final_indx = indxmap(i, j, k)
@@ -324,10 +321,8 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = idx1%ix + idx2%ix - 1
-    if (i > Nx) i = i - Nx
-    j = idx1%iy + idx2%iy - 1
-    if (j > Ny) j = j - Ny
+    i = idx1%ix + idx2%ix - 1 + (i > Nx) * Nx
+    j = idx1%iy + idx2%iy - 1 + (i > Ny) * Ny
     k = idx1%iw + idx2%iw - Nf 
 
     final_indx = indxmap(i, j, k)
@@ -341,10 +336,8 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = -idx1%ix + Nx + 2
-    if (i > Nx) i = i - Nx
-    j = -idx1%iy + Ny + 2
-    if (j > Ny) j = j - Ny
+    i = -idx1%ix + Nx + 2 + (i > Nx) * Nx
+    j = -idx1%iy + Ny + 2 + (i > Ny) * Ny
     k = -idx1%iw + Nf + 1
 
     final_indx = indxmap(i, j, k)
@@ -358,10 +351,8 @@ contains
     ! ... local vars ...
     integer :: i, j, k
     !$acc routine
-    i = -idx1%ix + Nx + 2
-    if (i > Nx) i = i - Nx
-    j = -idx1%iy + Ny + 2
-    if (j > Ny) j = j - Ny
+    i = -idx1%ix + Nx + 2 + (i > Nx) * Nx
+    j = -idx1%iy + Ny + 2 + (i > Ny) * Ny
     k = -idx1%iw + 2
 
     final_indx = indxmap(i, j, k)

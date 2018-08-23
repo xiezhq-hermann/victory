@@ -48,7 +48,7 @@ contains
                    if (ComIdx2%iw > Nf .or. Comidx2%iw < 1) then
                       dummy = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1)+One) + mu - Ek(ComIdx2%ix, ComIdx2%iy))
                    else
-                      dummy = Gkw(list_index(ComIdx2, Fermionic))
+                      dummy = Gkw(list_index_Fermionic(ComIdx2))
                    end if
                 case (3,4)
                    call index_operation_MinusF(Index_fermionic(j), Index_fermionic(j), ComIdx2)    !  -k
@@ -57,7 +57,7 @@ contains
                       ! use the non-interacting green's function when q-k is outside the box
                       dummy = One/( xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                    else
-                      dummy = Gkw(list_index(ComIdx3, Fermionic))
+                      dummy = Gkw(list_index_Fermionic(ComIdx3))
                    end if
                 end select
                 do i = 1, Nt

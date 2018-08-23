@@ -40,7 +40,7 @@ contains
        !  Phi = Gamma *G*G* F
        do i = 1, Nt
           call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1) ! k+q
-          idx1 = list_index(ComIdx1, Fermionic)
+          idx1 = list_index_Fermionic(ComIdx1)
           
           if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
              ! use the non-interacting Green's function when k+q is outside of the box
@@ -61,7 +61,7 @@ contains
        ! Phi = F *G*G* Gamma
        do i = 1, Nt
           call index_operation_FaddB(Index_fermionic(i), Index_bosonic(idx), ComIdx1) ! k+q
-          idx1 = list_index(ComIdx1, Fermionic)
+          idx1 = list_index_Fermionic(ComIdx1)
 
           if (ComIdx1%iw > Nf .or. ComIdx1%iw < 1) then
              ! use the non-interacting Green's function when k+q is outside of the box
@@ -99,7 +99,7 @@ contains
        do i = 1, Nt
           call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1)    !  -k
           call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2)                ! q-k
-          idx1 = list_index(ComIdx2, Fermionic)
+          idx1 = list_index_Fermionic(ComIdx2)
           if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
              ! use the non-interacting green's function when q-k is outside the box
              dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
@@ -120,7 +120,7 @@ contains
        do i = 1, Nt
           call index_operation_MinusF(Index_fermionic(i), Index_fermionic(i), ComIdx1)    !  -k
           call index_operation_FaddB(ComIdx1, Index_bosonic(idx), ComIdx2)                ! q-k
-          idx1 = list_index(ComIdx2, Fermionic)
+          idx1 = list_index_Fermionic(ComIdx2)
           if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
              ! use the non-interacting green's function when q-k is outside the box
              dummy = One/( xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
@@ -311,7 +311,62 @@ contains
   end subroutine get_kernel_function
  
   !-------------------------------------------------------------------------------------------------
-  complex(dp) function kernel(channel, k1, k2, q)
+  complex(dp) function kernel_CHANNEL_M(channel, k1, k2, q)
+    
+    ! character(len=1), intent(in) :: channel
+    integer,          intent(in) :: channel
+    type(Indxmap),    intent(in) :: k1, k2, q
+  
+    ! ... local vars ...
+    integer                      :: ic, jc, qc, iw, jw, qw, idx, idx1 
+    type(Indxmap)                :: k1_, k2_, q_
+    complex(dp)                  :: background
+    !$acc routine
+    if (q%iw > 0) then
+       k1_ = k1
+       k2_ = k2
+        q_ = q
+    else
+       call index_operation_MinusF(k1, k1, K1_)
+       call index_operation_MinusF(k2, k2, K2_)
+       call index_operation_MinusB(q, q, q_)
+    end if
+
+    ic = (k1_%ix-1)*Ny+k1_%iy
+    jc = (k2_%ix-1)*Ny+k2_%iy
+    qc = (q_%ix-1)*Ny+q_%iy
+    iw = k1_%iw
+    jw = k2_%iw
+    qw = q_%iw
+
+    idx  = ((k1_%ix-1)*Ny+k1_%iy)*Nf
+    idx1 = ((k1_%ix-1)*Ny+k1_%iy-1)*Nf+1 
+
+    kernel = Zero
+    if (qw > Nf/2) return
+
+    background = K2_d1(idx, jc, list_index_Bosonic(q_))
+
+    if (iw > Nf .or. iw < 1) then  ! k1 is out of range
+        if (jw > Nf .or. jw < 1) then  ! k2 if out of range
+          kernel = background
+        else
+          kernel = K2_d2(ic, list_index_Fermionic(K2_), list_index_Bosonic(q_))
+        end if
+    else
+        if (jw > Nf .or. jw < 1) then
+          kernel = K2_d1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
+        else
+          Kernel = K2_d1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_d2(ic, list_index(k2_), list_index(q_)) - background
+        end if
+    end if      
+
+    if (q%iw < 1)  Kernel = conjg(Kernel)
+
+  end function kernel 
+
+
+  complex(dp) function kernel_CHANNEL_D(channel, k1, k2, q)
     
     ! character(len=1), intent(in) :: channel
     integer, intent(in) :: channel
@@ -345,69 +400,57 @@ contains
     kernel = Zero
     if (qw > Nf/2) return
 
-    select case (channel)
-    case (CHANNEL_D)
-    
-          background = K2_d1(idx, jc, list_index(q_, Bosonic))
+    background = K2_m1(idx, jc, list_index_Bosonic(q_))
+    if (iw > Nf .or. iw < 1) then  ! k1 is out of range
+      if (jw > Nf .or. jw < 1) then  ! k2 if out of range
+        kernel = background
+      else
+        kernel = K2_m2(ic, list_index_Fermionic(K2_), list_index_Bosonic(q_))
+      end if
+    else
+      if (jw > Nf .or. jw < 1) then
+        kernel = K2_m1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
+      else
+        Kernel = K2_m1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_m2(ic, list_index(k2_), list_index(q_)) - background
+      end if
+    end if
 
-       if (iw > Nf .or. iw < 1) then  ! k1 is out of range
-          if (jw > Nf .or. jw < 1) then  ! k2 if out of range
-             kernel = background
-          else
-             kernel = K2_d2(ic, list_index(K2_, Fermionic), list_index(q_, Bosonic))
-          end if
-       else
-          if (jw > Nf .or. jw < 1) then
-             kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic))
-          else
-             Kernel = K2_d1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_d2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
-          end if
-       end if       
-    case (CHANNEL_M)
-          background = K2_m1(idx, jc, list_index(q_, Bosonic))
-       if (iw > Nf .or. iw < 1) then  ! k1 is out of range
-          if (jw > Nf .or. jw < 1) then  ! k2 if out of range
-             kernel = background
-          else
-             kernel = K2_m2(ic, list_index(K2_, Fermionic), list_index(q_, Bosonic))
-          end if
-       else
-          if (jw > Nf .or. jw < 1) then
-             kernel = K2_m1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic))
-          else
-             Kernel = K2_m1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_m2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
-          end if
-       end if
-    case (CHANNEL_S)
-          background = K2_s1(idx1, jc, list_index(q_, Bosonic))
-       if (iw > Nf .or. iw < 1) then  ! k1 is out of range
-          if (jw > Nf .or. jw < 1) then  ! k2 if out of range
-             kernel = background
-          else
-             kernel = K2_s2(ic, list_index(K2_, Fermionic), list_index(q_, Bosonic))
-          end if
-       else
-          if (jw > Nf .or. jw < 1) then
-             kernel = K2_s1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic))
-          else
-             Kernel = K2_s1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_s2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
-          end if
-       end if
-    case (CHANNEL_T)
-          background = K2_t1(idx1, jc, list_index(q_, Bosonic))
-       if (iw > Nf .or. iw < 1) then  ! k1 is out of range
-          if (jw > Nf .or. jw < 1) then  ! k2 if out of range
-             kernel = background
-          else
-             kernel = K2_t2(ic, list_index(K2_, Fermionic), list_index(q_, Bosonic))
-          end if
-       else
-          if (jw > Nf .or. jw < 1) then
-             kernel = K2_t1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic))
-          else
-             Kernel = K2_t1(list_index(k1_, Fermionic), jc, list_index(q_, Bosonic)) + K2_t2(ic, list_index(k2_, Fermionic), list_index(q_, Bosonic)) - background
-          end if
-       end if
+    if (q%iw < 1)  Kernel = conjg(Kernel)
+
+  end function kernel_CHANNEL_D 
+
+
+      case (CHANNEL_S)
+            background = K2_s1(idx1, jc, list_index_Bosonic(q_))
+        if (iw > Nf .or. iw < 1) then  ! k1 is out of range
+            if (jw > Nf .or. jw < 1) then  ! k2 if out of range
+              kernel = background
+            else
+              kernel = K2_s2(ic, list_index_Fermionic(K2_), list_index_Bosonic(q_))
+            end if
+        else
+            if (jw > Nf .or. jw < 1) then
+              kernel = K2_s1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
+            else
+              Kernel = K2_s1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_s2(ic, list_index(k2_), list_index(q_)) - background
+            end if
+        end if
+        
+      case (CHANNEL_T)
+            background = K2_t1(idx1, jc, list_index_Bosonic(q_))
+        if (iw > Nf .or. iw < 1) then  ! k1 is out of range
+            if (jw > Nf .or. jw < 1) then  ! k2 if out of range
+              kernel = background
+            else
+              kernel = K2_t2(ic, list_index_Fermionic(K2_), list_index_Bosonic(q_))
+            end if
+        else
+            if (jw > Nf .or. jw < 1) then
+              kernel = K2_t1(list_index_Fermionic(k1_), jc, list_index_Bosonic(q_))
+            else
+              Kernel = K2_t1(list_index_Fermionic(k1_, Fermionic), jc, list_index_Bosonic(q_, Bosonic)) + K2_t2(ic, list_index(k2_), list_index(q_)) - background
+            end if
+        end if
     end select
      
     if (q%iw < 1)  Kernel = conjg(Kernel)

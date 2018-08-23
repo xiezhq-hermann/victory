@@ -148,13 +148,13 @@ contains
                 if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                    dummy1 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                 else
-                   dummy1 = Gkw(list_index(ComIdx2, Fermionic))
+                   dummy1 = Gkw(list_index_Fermionic(ComIdx2))
                 end if
                 call index_operation_FaddB(map_j, map_k, ComIdx3) ! k'+q
                 if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                    dummy2 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                 else
-                   dummy2 = Gkw(list_index(ComIdx3, Fermionic))
+                   dummy2 = Gkw(list_index_Fermionic(ComIdx3))
                 end if
                 
                    dummy = dummy + dummy3*dummy1*dummy2*(mat(i, j, k))
@@ -168,9 +168,9 @@ contains
                    if (ComIdx5%iw > Nf .or. ComIdx5%iw < 1) then
                       dummy1 = One/(xi*Pi/beta*(Two*(ComIdx5%iw-Nf/2-1) + One) + mu - Ek(ComIdx5%ix, ComIdx5%iy) )
                    else
-                      dummy1 = Gkw(list_index(ComIdx5, Fermionic))
+                      dummy1 = Gkw(list_index_Fermionic(ComIdx5))
                    end if
-                      dummy = dummy + conjg(dummy3)*dummy1*conjg(dummy2)*conjg(mat(list_index(ComIdx1, Fermionic), j, k))
+                      dummy = dummy + conjg(dummy3)*dummy1*conjg(dummy2)*conjg(mat(list_index_Fermionic(ComIdx1), j, k))
                 end if
              end do
           end do
@@ -208,7 +208,7 @@ contains
                    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                       dummy2 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                    else
-                      dummy2 = Gkw(list_index(ComIdx2, Fermionic))
+                      dummy2 = Gkw(list_index_Fermionic(ComIdx2))
                    end if
 
                    ! Gkw(k+q)
@@ -217,7 +217,7 @@ contains
                    if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                       dummy3 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                    else
-                      dummy3 = Gkw(list_index(ComIdx3, Fermionic))
+                      dummy3 = Gkw(list_index_Fermionic(ComIdx3))
                    end if
                    
                    dummy = dummy - dummy1*dummy2*dummy3*( &
@@ -238,7 +238,7 @@ contains
                       if (ComIdx4%iw > Nf .or. ComIdx4%iw < 1) then
                          dummy4 = One/(xi*Pi/beta*(Two*(ComIdx4%iw-Nf/2-1) + One) + mu - Ek(ComIdx4%ix, ComIdx4%iy) )
                       else
-                         dummy4 = Gkw(list_index(ComIdx4, Fermionic))
+                         dummy4 = Gkw(list_index_Fermionic(ComIdx4))
                       end if
                       
                       
@@ -255,14 +255,14 @@ contains
                    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                       dummy2 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                    else
-                      dummy2 = Gkw(list_index(ComIdx2, Fermionic))
+                      dummy2 = Gkw(list_index_Fermionic(ComIdx2))
                    end if
 
                    ! Gkw(q-k)
                    if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then  ! -k+q
                       dummy4 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                    else
-                      dummy4 = Gkw(list_index(ComIdx3, Fermionic))
+                      dummy4 = Gkw(list_index_Fermionic(ComIdx3))
                    end if
                    
                    
