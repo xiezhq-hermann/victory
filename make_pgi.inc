@@ -1,6 +1,6 @@
 FC          = mpifort
-FC_FLAGS    = -ta=tesla:cc70 -Minfo=accel -Mcuda -Mcudalib=cufft -Mcudalib=cublas
-DIR         = /mnt/nvmebeegfs/gpu_hackathon/hteam4/gjw/victory-master
+FC_FLAGS    = -ta=tesla:cc60 -Minfo=accel -Mcuda -Mcudalib=cufft -Mcudalib=cublas
+DIR         = /home/gavin/Documents/github/victory
 BIN         = $(DIR)/bin
 FLIB        = -lblas -llapack -lpthread
 MODPATH     = -I$(DIR)/src/SRC_MOD
