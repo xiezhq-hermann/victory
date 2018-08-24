@@ -6,6 +6,8 @@ module parquet_selfenergy
   use parquet_util
   use parquet_kernel
   use parquet_equation
+  use cufft
+  use openacc
 
 contains
   !----------------------------------------------------------------------
@@ -13,8 +15,8 @@ contains
     !
     ! Purpose
     ! ========
-    !  calculate self-energy from Schwinger-Dyson equation. 
-    !  The calculated self-energy is then distributed to each node. 
+    !  calculate self-energy from Schwinger-Dyson equation.
+    !  The calculated self-energy is then distributed to each node.
     !
     implicit none
     integer, intent(in)     :: ite
@@ -32,7 +34,7 @@ contains
     type(Indxmap) :: map_i, map_j, map_k
     character(len=30) :: FLE, str1, str2
     ! character(len=10) :: Mtype
-    integer :: Mtype
+    integer :: Mtype, ierr, Plan
 
     if (.NOT. allocated(SigmaOld)) allocate(SigmaOld(Nt))
     SigmaOld = Sigma
@@ -43,7 +45,7 @@ contains
     !  [1] Hartree term, which becomes nonzero at away-halfing case. At
     !  half-filling this term is U/2 and is absorbed into the chemical
     !  potential, thus, the chemical potential for half-filled case in this code is
-    !  defined as zero. 
+    !  defined as zero.
     do i = 1, Nx
        do j = 1, Ny
           do k = 1, Nf
@@ -52,12 +54,17 @@ contains
           end do
        end do
     end do
-    
-    ! [2] second order diagram 
-    
+
+    ! [2] second order diagram
+
     if (.NOT. allocated(dummy3d_1)) allocate(dummy3d_1(Nx, Ny, Nf))
     MType = FERMIONIC_
     dummy3D_1 = Zero
+
+    ierr = cufftPlan2d(Plan, Nx, Ny, CUFFT_Z2Z)
+    ierr = cufftSetStream(Plan,acc_get_cuda_stream(acc_async_sync))
+
+    !$acc data copy(dummy3D_1)
     do iTau = 1, Nf
        do i = 1, Nx
           if (i == 1) then
@@ -74,11 +81,17 @@ contains
              dummy3D_1(i, j, iTau) = Grt(i, j, iTau)**2*Grt(i1, j1, Nf-iTau+1)*xU*xU
           end do
        end do
-       
+
        ! --- now change it to k-t space by using FFT ---
-       call fftb2d(Nx, Ny, dummy3D_1(1:Nx, 1:Ny, iTau), C_wave_x, C_wave_y)    ! 2nd order Sigma in k-t space!       
+       ! call fftb2d(Nx, Ny, dummy3D_1(1:Nx, 1:Ny, iTau), C_wave_x, C_wave_y)    ! 2nd order Sigma in k-t space!
+ !$acc update device(dummy3D_1(:,:,iTau))
+       !$acc host_data use_device(dummy3D_1(:,:,iTau))
+       ierr = cufftExecZ2Z(Plan, dummy3D_1(:,:,iTau), dummy3D_1(:,:,iTau), CUFFT_FORWARD)
+       !$acc end host_data
     end do
-    
+    !$acc end data
+    ierr = cufftDestroy(Plan)
+
     ! 2nd order Sigma in k-w space
     if (.NOT. allocated(coutdata)) allocate(coutdata(Nf/2))
     do i = 1, Nx
@@ -92,7 +105,7 @@ contains
           end do
        end do
     end do
-    
+
     if (id == master) then
        ! --- Output the self-energy function from 2nd parquet approximation ---
        write(str1, '(I0.3)') ite
@@ -115,56 +128,56 @@ contains
     end if
     if (allocated(dummy3d_1)) deallocate(dummy3d_1)
     if (allocated(coutdata))  deallocate(coutdata)
-      
+
     ! the rest of the self-energy
     Sigma_V = Zero
     do ichannel = 1, 2
-       ! denisty and magnetic channels are sufficient for constructing self-energy. 
+       ! denisty and magnetic channels are sufficient for constructing self-energy.
        select case (ichannel)
        case (1)
           mat = F_d - xU
        case (2)
           mat = F_m + xU
        end select
-       
-       ! in the following, the self-energy is only determined inside the box using the full-vertex. 
+
+       ! in the following, the self-energy is only determined inside the box using the full-vertex.
        do i = 1, Nt
           dummy = Zero
 
           map_i = index_fermionic(i)
-          call index_operation(map_i, map_i, MinusF, ComIdx1)
+          call index_operation_MinusF(map_i, map_i, ComIdx1)
           ! variable k'
 
           do j = 1, Nt
 
           map_j = index_fermionic(j)
            dummy3 = Gkw(j)
-           
-             ! variable q             
+
+             ! variable q
              do k = 1, Nb
             map_k = index_bosonic(id*Nb+k)
 
-            call index_operation(map_i, map_k, FaddB, ComIdx2) ! k+q
+            call index_operation_FaddB(map_i, map_k, ComIdx2) ! k+q
                 if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                    dummy1 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                 else
                    dummy1 = Gkw(list_index(ComIdx2, Fermionic))
                 end if
-                call index_operation(map_j, map_k, FaddB, ComIdx3) ! k'+q
+                call index_operation_FaddB(map_j, map_k, ComIdx3) ! k'+q
                 if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                    dummy2 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                 else
                    dummy2 = Gkw(list_index(ComIdx3, Fermionic))
                 end if
-                
+
                    dummy = dummy + dummy3*dummy1*dummy2*(mat(i, j, k))
 
                 if (map_k%iw > 1) then
-                   ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q) 
-                   
-                   ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(k'+q)^* x G(k-q) x G(k')^* ] 
-                   call index_operation(ComIdx1, map_k, FaddB, ComIdx4)  ! -k+q
-                   call index_operation(ComIdx4, ComIdx4, MinusF, ComIdx5) ! k-q
+                   ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q)
+
+                   ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(k'+q)^* x G(k-q) x G(k')^* ]
+                   call index_operation_FaddB(ComIdx1, map_k, ComIdx4)  ! -k+q
+                   call index_operation_MinusF(ComIdx4, ComIdx4, ComIdx5) ! k-q
                    if (ComIdx5%iw > Nf .or. ComIdx5%iw < 1) then
                       dummy1 = One/(xi*Pi/beta*(Two*(ComIdx5%iw-Nf/2-1) + One) + mu - Ek(ComIdx5%ix, ComIdx5%iy) )
                    else
@@ -178,32 +191,32 @@ contains
                    case(1)
           Sigma_V(i) = Sigma_V(i) - xU/beta/beta/Nc/Nc/2.0*dummy
                     case(2)
-          Sigma_V(i) = Sigma_V(i) + xU/beta/beta/Nc/Nc/2.0*dummy                    
-                    
-                    end select         
+          Sigma_V(i) = Sigma_V(i) + xU/beta/beta/Nc/Nc/2.0*dummy
+
+                    end select
        end do
-              
+
     end do
 
     ! now we determine the self-energy solely from the auxiliary function in an enlarged parameter space
     do i = 1, Nt
        dummy = 0.d0
        map_i=index_fermionic(i)
-       call index_operation(map_i, map_i, MinusF, ComIdx1)
+       call index_operation_MinusF(map_i, map_i, ComIdx1)
        do jx = 1, Nx
           do jy = 1, Ny
              do jw = -Nf+1, 2*Nf
-              
+
                 ! Gkw(k')
                 if (jw > Nf .or. jw < 1) then
-                  ComIdx_j = indxmap(jx, jy, jw)
- 
+                  ComIdx_j = indxmap(jx, jy, jw, jw)
+
                 dummy1 = One/(xi*Pi/beta*(Two*(jw-Nf/2-1) + One) + mu - Ek(jx, jy) )
-                
+
                 do k = 1, Nb
                     map_k= index_bosonic(id*Nb+k)
                     ! Gkw(k'+q)
-                   call index_operation(ComIdx_j, map_k, FaddB, ComIdx2) ! k'+q
+                   call index_operation_FaddB(ComIdx_j, map_k, ComIdx2) ! k'+q
 
                    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                       dummy2 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
@@ -212,46 +225,46 @@ contains
                    end if
 
                    ! Gkw(k+q)
-                   call index_operation(map_i, map_k, FaddB, ComIdx3) ! k+q
+                   call index_operation_FaddB(map_i, map_k, ComIdx3) ! k+q
 
                    if (ComIdx3%iw > Nf .or. ComIdx3%iw < 1) then
                       dummy3 = One/(xi*Pi/beta*(Two*(ComIdx3%iw-Nf/2-1) + One) + mu - Ek(ComIdx3%ix, ComIdx3%iy) )
                    else
                       dummy3 = Gkw(list_index(ComIdx3, Fermionic))
                    end if
-                   
+
                    dummy = dummy - dummy1*dummy2*dummy3*( &
                    kernel(CHANNEL_D, map_i, ComIdx_j,map_k) - 3.0d0*kernel(CHANNEL_M, map_i, ComIdx_j, map_k))
-                                     
-                
-                   ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q) 
-                   
-                   ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(k'+q)^* x G(k-q) x G(k')^* ] 
-                                      
-                    call index_operation(ComIdx1, map_k, FaddB, ComIdx3)  ! -k+q
-                    call index_operation(ComIdx3, ComIdx3, MinusF, ComIdx4) ! k-q               
-                   
-                                      
+
+
+                   ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q)
+
+                   ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(k'+q)^* x G(k-q) x G(k')^* ]
+
+                    call index_operation_FaddB(ComIdx1, map_k, ComIdx3)  ! -k+q
+                    call index_operation_MinusF(ComIdx3, ComIdx3, ComIdx4) ! k-q
+
+
                    if ( map_k%iw > 1) then
-                      ! time-reversal part 
+                      ! time-reversal part
 
                       if (ComIdx4%iw > Nf .or. ComIdx4%iw < 1) then
                          dummy4 = One/(xi*Pi/beta*(Two*(ComIdx4%iw-Nf/2-1) + One) + mu - Ek(ComIdx4%ix, ComIdx4%iy) )
                       else
                          dummy4 = Gkw(list_index(ComIdx4, Fermionic))
                       end if
-                      
-                      
+
+
                       dummy = dummy - conjg(dummy1)*conjg(dummy2)*dummy4*conjg(&
                       kernel(CHANNEL_D, ComIdx1, ComIdx_j,map_k) - 3.0d0*kernel(CHANNEL_M, ComIdx1, ComIdx_j,map_k))
-           
+
                  end if
-                 
-                 ! The contributions of s and t kernels have shifted variables: k+k'+q -> q, k+q -> q-k', k'+q -> q-k   
-  
+
+                 ! The contributions of s and t kernels have shifted variables: k+k'+q -> q, k+q -> q-k', k'+q -> q-k
+
                  ! Gkw(q-k')
-                    call index_operation(ComIdx_j, ComIdx_j, MinusF, ComIdx5) ! -k'
-                    call index_operation(ComIdx5, index_bosonic(id*Nb+k), FaddB, ComIdx2) ! -k'+q
+                    call index_operation_MinusF(ComIdx_j, ComIdx_j, ComIdx5) ! -k'
+                    call index_operation_FaddB(ComIdx5, index_bosonic(id*Nb+k), ComIdx2) ! -k'+q
                    if (ComIdx2%iw > Nf .or. ComIdx2%iw < 1) then
                       dummy2 = One/(xi*Pi/beta*(Two*(ComIdx2%iw-Nf/2-1) + One) + mu - Ek(ComIdx2%ix, ComIdx2%iy) )
                    else
@@ -264,21 +277,21 @@ contains
                    else
                       dummy4 = Gkw(list_index(ComIdx3, Fermionic))
                    end if
-                   
-                   
+
+
                     dummy = dummy - dummy1*dummy2*dummy4*( &
                     kernel(CHANNEL_S, map_i, ComIdx_j, map_k) + kernel(CHANNEL_T, map_i, ComIdx_j,map_k))
-                 
+
                   if ( index_bosonic(id*Nb+k)%iw > 1) then
-                                 
-                         ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q) 
+
+                         ! [2]: time-reversal symmetry conjg[ F(k,k';q) ] = F(-k,-k';-q)
                    ! -U x T^2/2/N^2 sum_k' sum_q [Fd(-k,k';q) - Fm(-k,k';q)]^* x [G(q-k')^* x G(-k-q) x G(k')^* ] =
                    !  -U x T^2/2/N^2 sum_k' sum_q conjg {[Fd(-k,k';q) - Fm(-k,k';q)] x G(q-k') x G(k+q) x G(k') }
-                   
+
                     dummy = dummy - conjg(dummy1*dummy2*dummy3*( &
-                    kernel(CHANNEL_S,  ComIdx1, ComIdx_j, map_k) + kernel(CHANNEL_T, ComIdx1, ComIdx_j,map_k )))                
-                 
-                  
+                    kernel(CHANNEL_S,  ComIdx1, ComIdx_j, map_k) + kernel(CHANNEL_T, ComIdx1, ComIdx_j,map_k )))
+
+
                    end if
                 end do
                 end if
@@ -287,16 +300,16 @@ contains
        end do
        Sigma_V(i) = Sigma_V(i) +  0.5d0*xU/beta/beta/Nc/Nc*dummy
     end do
-    
+
     IF (.NOT. ALLOCATED(Sigma_Reduced)) ALLOCATE(Sigma_Reduced(Nt))
 
     call MPI_AllReduce(Sigma_V, Sigma_Reduced, Nt, MPI_DOUBLE_COMPLEX, MPI_SUM, MPI_COMM_WORLD, rc)
     Sigma = Sigma + Sigma_Reduced
-    
+
     Deallocate(Sigma_Reduced)
 
     ! output the Green's function in k-w space
-    if (id == master) then 
+    if (id == master) then
        write(str1, '(I0.3)') ite
        FLE = 'Sigmakw-'//trim(str1)//'.dat'
        open(unit=1, file=FLE, status='unknown')

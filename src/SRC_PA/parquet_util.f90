@@ -1,5 +1,5 @@
 module parquet_util
-  
+
   use mpi_mod
   use global_parameter
   use math_mod
@@ -25,11 +25,11 @@ module parquet_util
   logical :: DGA=.false.  ! determine if the local fully irreducible vertex is
                           ! used. In case of DGA=.False., parquet approximation
                           ! is used.
-  integer :: Nx           ! linear dimension of a1. 
-  integer :: Ny           ! linear dimension of a2. 
+  integer :: Nx           ! linear dimension of a1.
+  integer :: Ny           ! linear dimension of a2.
   integer :: Nf           ! num of Matsubara frequencies
   integer :: Nt           ! linear dimension of combined momentum and frequency
-                          ! variable 
+                          ! variable
   integer :: Nc           ! total number of sites
   integer :: Nb           ! the number of bosonic variables used for the massive
                           ! parallization.
@@ -38,22 +38,22 @@ module parquet_util
   complex,     allocatable :: Sigma_H(:, :)  ! Hatree energy
 
   real(dp),    allocatable :: Ek(:, :)       ! tight-binding dispersion
-  
+
   complex(dp), allocatable :: Delta(:)       ! DMFT hybridization function
-  
+
   complex(dp), allocatable :: L_d(:, :, :)   ! local fully irreducible vertex in
                                              ! the density channel
   complex(dp), allocatable :: L_m(:, :, :)   !  ... in the magentic channel
   complex(dp), allocatable :: L_s(:, :, :)   !  ... in the singlet channel
   complex(dp), allocatable :: L_t(:, :, :)   !  ... in the triplet channel
-  
+
   ! complete vertex in each channel
   complex(dp), allocatable :: F_d(:, :, :)     ! density channel
   complex(dp), allocatable :: F_m(:, :, :)     ! magnetic channel
   complex(dp), allocatable :: F_s(:, :, :)     ! singlet channel
   complex(dp), allocatable :: F_t(:, :, :)     ! triplet channel
 
-  ! irreducible vertex in each channel 
+  ! irreducible vertex in each channel
   complex(dp), allocatable :: G_d(:, :, :)     ! density channel
   complex(dp), allocatable :: G_m(:, :, :)     ! magnetic channel
   complex(dp), allocatable :: G_s(:, :, :)     ! singlet channel
@@ -77,7 +77,7 @@ module parquet_util
 
   complex(dp), allocatable :: mat(:,:,:)       ! temporary arry for parquet equation and self-energy calculations
 
-  ! FFT 
+  ! FFT
   real(dp), allocatable :: C_wave_x(:)         ! work array for FFT in x
   real(dp), allocatable :: C_wave_y(:)         ! work array for FFT in y
 
@@ -85,6 +85,7 @@ module parquet_util
      integer :: ix
      integer :: iy
      integer :: iw
+     integer :: inull
   end type indxmap
 
   type(indxmap), allocatable :: Index_fermionic(:), Index_bosonic(:)
@@ -93,7 +94,7 @@ contains
   !------------------------------------------------------------------------------
   subroutine readin
     implicit none
-    
+
     !
     !  Purpose
     ! =========
@@ -109,13 +110,13 @@ contains
     !   iw: the Matsubara frequency index
     !
     !   (ix, iy, iw) -> indx = [(ix-1)*Ny+iy-1]*Nf+iw
-    !   
+    !
     !   ib: the index on each node for the assigned copies of the full vertex
     !
     !   indx = id*Nb + ib, where id is the node index between [0, ntasks)
-    !   
+    !
     !   the fermionic and bosonic frequencies are given as
-    !    
+    !
     !    v = Pi/beta * [2*(iw-Nf/2-1)+1] ;  v = Pi/beta*[-Nf+1 : Nf-1: 2]
     !    w = Pi/beta * [2*(iw-1)];          w = Pi/beta*[0: Nf-2 : 2]
     !
@@ -123,9 +124,9 @@ contains
     ! ... local vars ...
     integer   :: i, j, k, itemp, idx
     real(dp)  :: t1, t2, t3, t4, dkx, dky, kx, ky
-    
+
     open(unit=1, file='input.parquet', status='old')
-    read(1, *) Nx, Ny, nOmega, beta, xU, nParticle, f_damping     
+    read(1, *) Nx, Ny, nOmega, beta, xU, nParticle, f_damping
     read(1, *) DGA                              ! if the local fully irreducible
                                                 ! vertex from DMFT is used or
                                                 ! not.
@@ -135,7 +136,7 @@ contains
     Nf = 2*nOmega
     Nt = Nc*Nf
     Nb = Nt/ntasks/2
-    
+
     if (mod(Nt, ntasks) /= 0) then
        call error_msg('The allocated total num. of CPU is not compatible for parallization.')
     else
@@ -164,15 +165,15 @@ contains
        do j = 1, Ny
           do k = 1, Nf
              idx = ((i-1)*Ny+j-1)*Nf + k
-             Index_fermionic(idx) = indxmap(i, j, k) 
+             Index_fermionic(idx) = indxmap(i, j, k, k)
           end do
           do k = 1, Nf/2
              idx = ((i-1)*Ny+j-1)*Nf/2 + k
-             Index_bosonic(idx) = indxmap(i, j, k)
+             Index_bosonic(idx) = indxmap(i, j, k, k)
           end do
        end do
     end do
- 
+
     ! --- set up the tight-binding dispersion ---
     if (.NOT. allocated(Ek)) allocate(Ek(Nx, Ny))
     dkx = Two*Pi/Nx
@@ -190,9 +191,9 @@ contains
 
     if (.NOT. allocated(Sigma_H)) allocate(Sigma_H(Nx, Ny))
     Sigma_H = Zero
-  
+
     if (.NOT. allocated(C_wave_x)) allocate(C_wave_x(4*Nx+15))
-    if (.NOT. allocated(C_wave_y)) allocate(C_wave_y(4*Ny+15))   
+    if (.NOT. allocated(C_wave_y)) allocate(C_wave_y(4*Ny+15))
     call Zffti(Nx, C_wave_x)
     call Zffti(Ny, C_wave_y)
 
@@ -212,8 +213,8 @@ contains
           do j = 1, Nf
              do k = 1, Nf/2
                 read(1, *) itemp, itemp, itemp, t1, t2, t3, t4
-                L_d(i, j, k) = dcmplx(t1, t2)      ! density component  
-                L_m(i, j, k) = dcmplx(t3, t4)      ! magnetic component 
+                L_d(i, j, k) = dcmplx(t1, t2)      ! density component
+                L_m(i, j, k) = dcmplx(t3, t4)      ! magnetic component
              end do
           end do
        end do
@@ -224,18 +225,18 @@ contains
           do j = 1, Nf
              do k = 1, Nf/2
                 read(1, *) itemp, itemp, itemp, t1, t2, t3, t4
-                L_s(i, j, k) = dcmplx(t1, t2)     ! singlet component 
+                L_s(i, j, k) = dcmplx(t1, t2)     ! singlet component
                 L_t(i, j, k) = dcmplx(t3, t4)     ! triplet component
              end do
           end do
        end do
        close(1)
     end if
-    
+
     if (.NOT. allocated(G_d)) allocate(G_d(Nt, Nt, Nb))
     if (.NOT. allocated(G_m)) allocate(G_m(Nt, Nt, Nb))
     if (.NOT. allocated(G_s)) allocate(G_s(Nt, Nt, Nb))
-    if (.NOT. allocated(G_t)) allocate(G_t(Nt, Nt, Nb))    
+    if (.NOT. allocated(G_t)) allocate(G_t(Nt, Nt, Nb))
     G_d =  xU
     G_m = -xU
     G_s = Two*xU
@@ -275,7 +276,7 @@ contains
 
   !------------------------------------------------------------------------------
   integer function list_index(P, typ) result(idx)
-     
+
     type(Indxmap), intent(in) :: P
     ! character(len=30), intent(in) :: typ
     integer, intent(in) :: typ
@@ -292,49 +293,79 @@ contains
   end function list_index
 
   !------------------------------------------------------------------------------
-  subroutine index_operation(idx1, idx2, operation, final_Indx)
-    !
-    ! Purpose
-    ! =======
-    !  For given two indices in the complete list, find out the resulting index for
-    !  a given operation.
-    !
+  !
+  ! Purpose
+  ! =======
+  !  For given two indices in the complete list, find out the resulting index for
+  !  a given operation.
+  !
+  subroutine index_operation_FaddB(idx1, idx2, final_Indx)
+
     type(Indxmap), intent(in)     :: idx1, idx2
-    ! character(len=30), intent(in) :: operation
-    integer, intent(in) :: operation
     type(Indxmap), intent(out)    :: final_Indx
 
     ! ... local vars ...
     integer :: i, j, k
 
-    if (operation == FaddB) then 
-       i = idx1%ix + idx2%ix - 1
-       if (i > Nx) i = i - Nx
-       j = idx1%iy + idx2%iy - 1
-       if (j > Ny) j = j - Ny
-       k = idx1%iw + idx2%iw - 1      
-    elseif (operation == FaddF) then
-       i = idx1%ix + idx2%ix - 1
-       if (i > Nx) i = i - Nx
-       j = idx1%iy + idx2%iy - 1
-       if (j > Ny) j = j - Ny
-       k = idx1%iw + idx2%iw - Nf 
-    elseif (operation == MinusF) then
-       i = -idx1%ix + Nx + 2
-       if (i > Nx) i = i - Nx
-       j = -idx1%iy + Ny + 2
-       if (j > Ny) j = j - Ny
-       k = -idx1%iw + Nf + 1
-    elseif (operation == MinusB) then
-       i = -idx1%ix + Nx + 2
-       if (i > Nx) i = i - Nx
-       j = -idx1%iy + Ny + 2
-       if (j > Ny) j = j - Ny
-       k = -idx1%iw + 2
-    end if
-    final_indx = indxmap(i, j, k)
-    
-  end subroutine index_operation
+    i = idx1%ix + idx2%ix - 1
+      if (i > Nx) i = i - Nx
+    j = idx1%iy + idx2%iy - 1
+      if (j > Ny) j = j - Ny
+    k = idx1%iw + idx2%iw - 1
+
+    final_indx = indxmap(i, j, k, k)
+
+  end subroutine index_operation_FaddB
+
+  subroutine index_operation_FaddF(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = idx1%ix + idx2%ix - 1
+    if (i > Nx) i = i - Nx
+    j = idx1%iy + idx2%iy - 1
+    if (j > Ny) j = j - Ny
+    k = idx1%iw + idx2%iw - Nf
+
+    final_indx = indxmap(i, j, k, k)
+
+  end subroutine index_operation_FaddF
+
+  subroutine index_operation_MinusF(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+    i = -idx1%ix + Nx + 2
+    if (i > Nx) i = i - Nx
+    j = -idx1%iy + Ny + 2
+    if (j > Ny) j = j - Ny
+    k = -idx1%iw + Nf + 1
+
+    final_indx = indxmap(i, j, k, k)
+
+  end subroutine index_operation_MinusF
+
+  subroutine index_operation_MinusB(idx1, idx2, final_Indx)
+    type(Indxmap), intent(in)     :: idx1, idx2
+    type(Indxmap), intent(out)    :: final_Indx
+
+    ! ... local vars ...
+    integer :: i, j, k
+
+    i = -idx1%ix + Nx + 2
+    if (i > Nx) i = i - Nx
+    j = -idx1%iy + Ny + 2
+    if (j > Ny) j = j - Ny
+    k = -idx1%iw + 2
+
+    final_indx = indxmap(i, j, k, k)
+
+  end subroutine index_operation_MinusB
 
   !------------------------------------------------------------------------------
   subroutine pa_Gkw_Chi0(ite, Grt)
@@ -342,7 +373,7 @@ contains
     ! Purpose
     ! =======
     !   Generate the Green's function Gkw. The initial value is just the non-interacting
-    !   one. The bubble diagrams of two convoluted Green's function are then 
+    !   one. The bubble diagrams of two convoluted Green's function are then
     !   calculated from the Fourier-Transformed Gkw, i.e. Grt. The inverse Fourier
     !   transform is carried out by using the supplementation of spline interpolation.
     !
@@ -369,7 +400,6 @@ contains
     ! character(len=10) :: Mtype
     integer :: Mtype
 
-
     if (.NOT. allocated(Gkw))     allocate(Gkw(Nt))
     if (.NOT. allocated(Sigma))   allocate(Sigma(Nt))
     if (ite == 1) Sigma = Zero
@@ -377,9 +407,9 @@ contains
        do j = 1, Ny
           idx = (Ny*(i-1)+j)*Nf
           Sigma_H(i, j) = Sigma(idx)
-          if (id == master) write(*, "('Hartree energy for', 2i4, ' is', 2f12.6 )") i, j, Sigma_H(i, j)
+          ! if (id == master) write(*, "('Hartree energy for', 2i4, ' is', 2f12.6 )") i, j, Sigma_H(i, j)
        end do
-    end do    
+    end do
 
     ! --- first to adjust the chemical potential ---
     mu_UpperBound = mu + xU
@@ -396,7 +426,7 @@ contains
              idx = (Ny*(i-1)+j-1)*Nf + k
              if (Nc == 1) then
                 Gkw(k) = One/(xi*w + mu - Delta(k) - Sigma(k))
-             else                
+             else
                 Gkw(idx) = One/(xi*w + mu - Ek(i, j) - Sigma(idx))
              end if
              dummy1D(k) = (Gkw(idx) - One/(xi*w + mu - Ek(i, j)))  ! Ek is zero when Nc = 1
@@ -422,7 +452,7 @@ contains
 
     t1 = -Two*Grt(1, 1, Nf)
 
-    if (id == master) write(*, "(' particle number is:', f12.6, ' chemical potential is', f12.6)") t1, mu
+    ! if (id == master) write(*, "(' particle number is:', f12.6, ' chemical potential is', f12.6)") t1, mu
     if (abs(t1 - nParticle) > 1.d-4) then
        if (t1 > nParticle) then
           mu_UpperBound = mu
@@ -432,12 +462,12 @@ contains
        mu = Half*(mu_UpperBound + mu_LowerBound)
        goto 111  ! TODO: Remove this goto (while abs < 1.d-4 do ...)
     end if
-   
+
     ! output the Green's function in k-w space
     if (id == master) then
        write(str1, '(I0.3)') ite
        FLE = 'Gkw-'//trim(str1)//'.dat'
-       open(unit=1, file=FLE, status='unknown')    
+       open(unit=1, file=FLE, status='unknown')
        do i = 1, Nx
           kx = dkx*(i-1)
           do j = 1, Ny
@@ -450,7 +480,7 @@ contains
           end do
        end do
        close(1)
-       
+
        ! output the Green's function in r-t space
        FLE = 'Grt-'//trim(str1)//'.dat'
        open(unit=1, file=FLE, status='unknown')
@@ -466,8 +496,8 @@ contains
     end if
 
     !
-    ! Now, determine the bubble diagram of two convoluted Green's function, which will be 
-    ! used to approximate the reducible vertex in each channel for components that are not 
+    ! Now, determine the bubble diagram of two convoluted Green's function, which will be
+    ! used to approximate the reducible vertex in each channel for components that are not
     ! avaliable from the updated complete- and irreducible-vertex in this channel.
     !
 
@@ -488,7 +518,7 @@ contains
              else
                 j1 = Ny-j+2
              end if
-             Chi0rt_ph(i, j, k) = -Grt(i, j, k)*Grt(i1, j1, Nf-k+1)     
+             Chi0rt_ph(i, j, k) = -Grt(i, j, k)*Grt(i1, j1, Nf-k+1)
           end do
        end do
        call fftb2d(Nx, Ny, Chi0rt_ph(1:Nx, 1:Ny, k), C_wave_x, C_wave_y)
@@ -498,7 +528,7 @@ contains
     do i = 1, Nx
        do j = 1, Ny
           do k = 1, Nf
-             dummy1D(k) = Chi0rt_ph(i, j, k) 
+             dummy1D(k) = Chi0rt_ph(i, j, k)
           end do
           call FDfit(Nf, dble(dummy1D), beta/dble(Nf-1), FD1, FD2)
           call nfourier(Mtype, Nf-1, Nf/2, FD1, FD2, dble(dummy1D), coutdata)
@@ -508,7 +538,7 @@ contains
           end do
        end do
     end do
-    
+
     ! --- particle-particle bubble ---
     do k = 1, Nf
        do i = 1, Nx
@@ -522,7 +552,7 @@ contains
     do i = 1, Nx
        do j = 1, Ny
           do k = 1, Nf
-             dummy1D(k) = Chi0rt_pp(i, j, k)    
+             dummy1D(k) = Chi0rt_pp(i, j, k)
           end do
           ! TODO: Investigate FDfit and nfourier for parallelism potential
           call FDfit(Nf, dble(dummy1D), beta/dble(Nf-1), FD1, FD2)
@@ -530,28 +560,28 @@ contains
           do k = 1, Nf/2
              idx = (Ny*(i-1)+j-1)*Nf/2 + k
              Chi0_pp(idx) = coutdata(k)
-          end do          
-       end do
-    end do
-    
-    ! --- monitoring the bubble results ---
-    if (id == master) then
-       FLE = 'Chi0-'//trim(str1)//'.dat'
-       open(unit=1, file=FLE, status='unknown')
-       do i = 1, Nx
-          kx = dkx*(i-1)
-          do j = 1, Ny
-             ky = dky*(j-1)
-             do k = 1, Nf/2
-                idx = (Ny*(i-1)+j-1)*Nf/2 + k
-                write(1, '(2f12.6, 5f12.6)') kx, ky, Pi/beta*Two*(k-1), &
-                     Chi0_ph(idx), Chi0_pp(idx) 
-             end do
-             write(1, *)
           end do
        end do
-       close(1)
-    end if
+    end do
+
+    ! ! --- monitoring the bubble results ---
+    ! if (id == master) then
+    !    FLE = 'Chi0-'//trim(str1)//'.dat'
+    !    open(unit=1, file=FLE, status='unknown')
+    !    do i = 1, Nx
+    !       kx = dkx*(i-1)
+    !       do j = 1, Ny
+    !          ky = dky*(j-1)
+    !          do k = 1, Nf/2
+    !             idx = (Ny*(i-1)+j-1)*Nf/2 + k
+    !             write(1, '(2f12.6, 5f12.6)') kx, ky, Pi/beta*Two*(k-1), &
+    !                  Chi0_ph(idx), Chi0_pp(idx)
+    !          end do
+    !          write(1, *)
+    !       end do
+    !    end do
+    !    close(1)
+    ! end if
 
   end subroutine pa_Gkw_Chi0
 
@@ -560,7 +590,7 @@ contains
 
     if (allocated(Delta)) Deallocate(Delta)
 
-    ! clear the dispersion 
+    ! clear the dispersion
     if (allocated(Ek)) Deallocate(Ek)
 
     ! deallocate the Hatree energy
@@ -572,9 +602,9 @@ contains
 
     ! deallocate arries for FFT
     if (allocated(C_wave_x)) Deallocate(C_wave_x)
-    if (allocated(C_wave_y)) Deallocate(C_wave_y)    
+    if (allocated(C_wave_y)) Deallocate(C_wave_y)
 
-    ! deallocate the local fully irreducible vertex 
+    ! deallocate the local fully irreducible vertex
     if (allocated(L_d)) Deallocate(L_d)
     if (allocated(L_m)) Deallocate(L_m)
     if (allocated(L_s)) Deallocate(L_s)
@@ -584,13 +614,13 @@ contains
     if (allocated(F_d)) Deallocate(F_d)
     if (allocated(F_m)) Deallocate(F_m)
     if (allocated(F_s)) Deallocate(F_s)
-    if (allocated(F_t)) Deallocate(F_t) 
+    if (allocated(F_t)) Deallocate(F_t)
 
     ! deallocate the irreducible veretx in each channel
     if (allocated(G_d)) Deallocate(G_d)
     if (allocated(G_m)) Deallocate(G_m)
     if (allocated(G_s)) Deallocate(G_s)
-    if (allocated(G_t)) Deallocate(G_t) 
+    if (allocated(G_t)) Deallocate(G_t)
 
     ! deallocate the single-particle Green's function
     if (allocated(Gkw))     Deallocate(Gkw)
