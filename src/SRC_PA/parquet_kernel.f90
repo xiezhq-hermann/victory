@@ -13,7 +13,7 @@ module Parquet_kernel
 
 contains
   !------------------------------------
-  attributes(global) subroutine reduc_kernel0(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
+  attributes(global) subroutine reduc_kernel0(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
     integer, value :: idx, Nf, Nc, Fermionic, Nt, k, Nx, Ny
     real(dp), value :: One, Pi, beta, mu, Two, xU
     complex(dp), value :: xi
@@ -43,7 +43,7 @@ contains
   end subroutine reduc_kernel0
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel1(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
+  attributes(global) subroutine reduc_kernel1(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
     integer, value :: idx, Nf, Nc, Fermionic, Nt, k, Nx, Ny
     real(dp), value :: One, Pi, beta, mu, Two, xU
     complex(dp), value :: xi
@@ -113,7 +113,7 @@ contains
   end subroutine reduc_kernel2_1
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel3(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
+  attributes(global) subroutine reduc_kernel3(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
     integer, value :: idx, Nf, Nc, Fermionic, Nt, k, Nx, Ny
     real(dp), value :: One, Pi, beta, mu, Two, xU, Half
     complex(dp), value :: xi
@@ -146,7 +146,7 @@ contains
   end subroutine reduc_kernel3
 
   !------------------------------------
-  attributes(global) subroutine reduc_kernel4(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
+  attributes(global) subroutine reduc_kernel4(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
     integer, value :: idx, Nf, Nc, Fermionic, Nt, k, Nx, Ny
     real(dp), value :: One, Pi, beta, mu, Two, xU, Half
     complex(dp), value :: xi
@@ -271,7 +271,7 @@ end subroutine reduc_kernel4
 
     complex(dp) :: G1_sum
 
-    complex(dp), device :: dummy
+    ! complex(dp), device :: dummy
     complex(dp), allocatable, managed :: G1(:)
 
     character(len=30) :: FLE, str
@@ -321,14 +321,20 @@ end subroutine reduc_kernel4
 
        ! --- density (d) and magnetic (m) channels ---
        !  Phi = Gamma *G*G* F
-       call reduc_kernel0<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
+       call reduc_kernel0<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
+
+      !  istat =  cudaDeviceSynchronize()
 
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gd_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gm_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
        call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gd_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
        call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gm_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
 
-       call reduc_kernel1<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
+      !  istat =  cudaDeviceSynchronize()
+
+       call reduc_kernel1<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Nx, Ny)
+
+      !  istat =  cudaDeviceSynchronize()
 
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gd_slice, Nt, One_c, dummy3D_3, Nt)
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gm_slice, Nt, One_c, dummy3D_4, Nt)
@@ -360,14 +366,20 @@ end subroutine reduc_kernel4
       call memSet2D<<<grid, tBlock>>>(dummy3D_3, Zero_c, Nt)
       call memSet2D<<<grid, tBlock>>>(dummy3D_4, Zero_c, Nt)
 
-      call reduc_kernel3<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
+      call reduc_kernel3<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
+
+      ! istat =  cudaDeviceSynchronize()
 
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gs_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, Gt_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
        call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gs_slice, Nt, dummy3D_1, Nt, Zero_c, dummy3D_3, Nt)
        call cublasZgemm('N', 'N', Nt, Nt, Nt, Half_c, Gt_slice, Nt, dummy3D_2, Nt, Zero_c, dummy3D_4, Nt)
 
-      call reduc_kernel4<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, dummy, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
+      !  istat =  cudaDeviceSynchronize()
+
+      call reduc_kernel4<<<(Nt+31)/32, 32>>>(idx, ComIdx1, ComIdx2, Nf, One, xi, Pi, beta, Two, mu, Ek, G1, Gkw, Fermionic, dummy3D_1, dummy3D_2, F_d, F_m, Nc, xU, Index_fermionic, Index_bosonic, Nt, k, Half, F_s, F_t, Nx, Ny)
+
+      ! istat =  cudaDeviceSynchronize()
 
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_1, Nt, Gs_slice, Nt, One_c, dummy3D_3, Nt)
       !  call ZGEMM('N', 'N', Nt, Nt, Nt, Half_c, dummy3D_2, Nt, Gt_slice, Nt, One_c, dummy3D_4, Nt)       
@@ -382,22 +394,24 @@ end subroutine reduc_kernel4
         call reduc_kernel5_0<<<grid, tBlock>>>(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1_sum, Nt)
       else
         call reduc_kernel5_1<<<grid, tBlock>>>(G_s, G_t, k, idx, One, Two, f_damping, xU, Chi0_pp, dummy3D_3, dummy3D_4, G1_sum, F_s, F_t, Nt)
-      end if       
+      end if      
+      istat =  cudaDeviceSynchronize()
+
     end do
 
-    ! write(str, '(I0.3,a,I0.3)') ite, '-', id
-    ! if (Nc <= 2) then
-    !    FLE = 'Reducible_V-'//trim(str)
-    !    open(unit=1, file=FLE, status='unknown')
-    !    do i = 1, Nt
-    !       do j = 1, Nt
-    !          do k = 1, Nb
-    !             write(1, '(3i5, 8f20.12)') i, j, k, G_d(i, j, k), G_m(i, j, k), G_s(i, j, k), G_t(i, j, k)
-    !          end do
-    !       end do
-    !    end do
-    ! end if
-    ! close(1)
+    write(str, '(I0.3,a,I0.3)') ite, '-', id
+    if (Nc <= 2) then
+       FLE = 'Reducible_V-'//trim(str)
+       open(unit=1, file=FLE, status='unknown')
+       do i = 1, Nt
+          do j = 1, Nt
+             do k = 1, Nb
+                write(1, '(3i5, 8f20.12)') i, j, k, G_d(i, j, k), G_m(i, j, k), G_s(i, j, k), G_t(i, j, k)
+             end do
+          end do
+       end do
+    end if
+    close(1)
 
     if (allocated(dummy3D_1)) deallocate(dummy3D_1)
     if (allocated(dummy3D_2)) deallocate(dummy3D_2)
